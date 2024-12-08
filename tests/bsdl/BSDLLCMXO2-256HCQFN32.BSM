@@ -1,0 +1,353 @@
+-- ********************************************************************
+-- * LCMXO2_256HC BSDL Model                                              *
+-- *                                                                  *
+-- * File Version:      1.03                                          *
+-- * File Date:         12/ 5/2012                                    *
+-- *                                                                  *
+-- * Standard Test Access Port and Boundary-Scan Architecture         *
+-- * VHDL Description File                                            *
+-- *                                                                  *
+-- * This BSDL file is created by genBSDL V2.1 according to:          *
+-- * - IEEE Standard 1149.1-2001                                      *
+-- *                                                                  *
+-- * Generated with:                                                  *
+-- * - PKT Rev:  1.37                                                 *
+-- * - BSR Rev:  1.3                                                 *
+-- * - OPCODE Rev:  1.6                                               *
+-- *                                                                  *
+-- * This BSDL has been validated for syntax and semantics            *
+-- * compliance to IEEE 1149.1 using:                                 *
+-- * - Lattice BSDL Syntax Checker                                    *
+-- * - Goepel BSDL Syntax Checker V3.1.2                              *
+-- * - ASSET/Agilent BSDL Validation Service                          *
+-- * - Intellitech BSDL Syntax Checker                                *
+-- *                                                                  *
+-- *  Copyright 2000 - 2012                                           *
+-- *  Lattice Semiconductor Corporation                               *
+-- *  5555 NE Moore Ct.                                               *
+-- *  Hillsboro, OR 97124                                             *
+-- *                                                                  *
+-- *  All rights reserved.  No part of this program or publication    *
+-- *  may be reproduced, transmitted, transcribed, stored in a        *
+-- *  retrieval system, or translated into any language or            *
+-- *  computer language, in any form or by any means without this     *
+-- *  notice appearing within.                                        *
+-- ********************************************************************
+-- *                                                                  *
+-- *                           IMPORTANT                              *
+-- *                                                                  *
+-- * The following is a BSDL file that tests all of the I/O pins      *
+-- * as bi-directional pins. The functionality of the BSCAN register  *
+-- * for this device is dependent of the pattern programmed into the  *
+-- * device. If the device is configured to use LVDS pairs or VREF    *
+-- * signals, an application specific BSDL file is required.          *
+-- * If any IOs are configured as output only, the device needs to be *
+-- * erase and re-program to bi-directional pin or use power cycle to *
+-- * reset to default state. Otherwise an application specific BSDL   *
+-- * file is required.                                                *
+-- *                                                                  *
+-- * For Further assistance, please contact Tech Support at           *
+-- *       1-800-LATTICE or techsupport@latticesemi.com               *
+-- ********************************************************************
+-- *                                                                  *
+-- *                          REVISION HISTORY                        *
+-- * Rev 1.01: 12/ 5/2012                                             *
+-- *  - advanced version.                                          *
+-- *                                                                  *
+-- ********************************************************************
+entity LCMXO2_256HC_QFN32 is 
+
+	generic (PHYSICAL_PIN_MAP : string := "qfn32");
+		port (
+	                PL5C  :  inout bit;
+	                PL5D  :  inout bit;
+	              VCCIO3  :  linkage bit;
+	                PB2A  :  inout bit;
+	                PB2C  :  inout bit;
+	                PB2D  :  inout bit;
+	                PB4A  :  inout bit;
+	                PB4B  :  inout bit;
+	                PB4C  :  inout bit;
+	                PB4D  :  inout bit;
+	                PB9A  :  inout bit;
+	                PB9B  :  inout bit;
+	              VCCIO1  :  linkage bit;
+	                PR5B  :  inout bit;
+	                PR5A  :  inout bit;
+	                PT9D  :  inout bit;
+	                PT9B  :  inout bit;
+	                PT9A  :  inout bit;
+	                PT8D  :  inout bit;
+	                PT8C  :  inout bit;
+	                 TMS  :  in bit;
+	                 TCK  :  in bit;
+	                 TDI  :  in bit;
+	                 TDO  :  out bit;
+	                 GND  :  linkage bit_vector (1 to 2);
+	                 VCC  :  linkage bit_vector (1 to 2);
+	              VCCIO0  :  linkage bit_vector (1 to 2);
+	              VCCIO2  :  linkage bit_vector (1 to 2));
+-- Version Control
+	use STD_1149_1_2001.all;	-- 1149.1-2001 attributes
+
+-- Component Conformance Statement
+	attribute COMPONENT_CONFORMANCE of LCMXO2_256HC_QFN32 : entity is "STD_1149_1_2001";
+
+-- Device Package Pin Mapping
+	attribute PIN_MAP of LCMXO2_256HC_QFN32 : entity is PHYSICAL_PIN_MAP;
+
+	constant qfn32 : PIN_MAP_STRING :=
+		"        PL5C:    4, " & --secfnc PCLKT3_0 
+		"        PL5D:    5, " & --secfnc PCLKC3_0 
+		"      VCCIO3:    6, " &
+		"        PB2A:    8, " & --secfnc CSSPIN_MD4_TDOB 
+		"        PB2C:    9, " & --secfnc MCLK_CCLK 
+		"        PB2D:   10, " & --secfnc SO_SPISO_IO1_MD1_TDIL 
+		"        PB4A:   11, " & --secfnc PCLKT2_0_INTEST_OVER 
+		"        PB4B:   12, " & --secfnc PCLKC2_0 
+		"        PB4C:   13, " & --secfnc PCLKT2_1_INTEST_OVER 
+		"        PB4D:   14, " & --secfnc PCLKC2_1 
+		"        PB9A:   16, " & --secfnc SN_MD5_SCAN_SHFT_ENB_TDIB 
+		"        PB9B:   17, " & --secfnc SI_SISPI_IO0_MD0_TDOR 
+		"      VCCIO1:   19, " &
+		"        PR5B:   20, " & --secfnc PCLKC1_0 
+		"        PR5A:   21, " & --secfnc PCLKT1_0 
+		"        PT9D:   23, " & --secfnc DONE 
+		"        PT9B:   25, " & --secfnc PROGRAMN 
+		"        PT9A:   26, " & --secfnc JTAGENB_MD6_TDIR 
+		"        PT8D:   27, " & --secfnc SDA_IO3_MD3_ATB_FORCE_PCLKC0_0_TDOT 
+		"        PT8C:   28, " & --secfnc SCL_IO2_MD2_ATB_SENSE_PCLKT0_0 
+		"         TMS:   29, " & --secfnc TMS 
+		"         TCK:   30, " & --secfnc TCK_TEST_CLK 
+		"         TDI:   32, " & --secfnc TDI_MD7 
+		"         TDO:    1, " & --secfnc TDO 
+		"         GND: (   3, " & 
+		"                22), " & 
+		"         VCC: (  18, " & 
+		"                 2), " & 
+		"      VCCIO0: (  24, " & 
+		"                31), " & 
+		"      VCCIO2: (   7, " & 
+		"                15)";
+
+-- End of pin mapping
+
+-- Grouped port mapping and definition
+--	attribute PORT_GROUPING of LCMXO2_256HC_QFN32 : entity is
+--		"DIFFERENTIAL_CURRENT ( " &
+--		"(PB2C, PB2D)," &
+--		"(PB4A, PB4B)," &
+--		"(PB4C, PB4D)," &
+--		"(PB9A, PB9B)," &
+--		"(PL5C, PL5D)," &
+--		"(PR5A, PR5B)," &
+--		"(PT6C, TDI)," &
+--		"(PT7A, TMS)," &
+--		"(PT8C, PT8D)," &
+--		"(PT9A, PT9B)," &
+--		"(PT9C, PT9D)," &
+-- End of grouped port mapping
+
+-- TAP definition and characteristics
+	attribute TAP_SCAN_IN   of TDI : signal is true;
+	attribute TAP_SCAN_MODE of TMS : signal is true;
+	attribute TAP_SCAN_OUT  of TDO : signal is true;
+	attribute TAP_SCAN_CLOCK of TCK : signal is (25.0e6, BOTH);
+
+-- Instruction register description
+	attribute INSTRUCTION_LENGTH of LCMXO2_256HC_QFN32 : entity is 8;
+	attribute INSTRUCTION_OPCODE of LCMXO2_256HC_QFN32 : entity is
+		"              IDCODE		(11100000)," &
+		"          ISC_ENABLE		(11000110)," &
+		"    ISC_PROGRAM_DONE		(01011110)," &
+		" LSC_PROGRAM_SECPLUS		(11001111)," &
+		"ISC_PROGRAM_USERCODE		(11000010)," &
+		"ISC_PROGRAM_SECURITY		(11001110)," &
+		"         ISC_PROGRAM		(01100111)," &
+		"        LSC_ENABLE_X		(01110100)," &
+		"              BYPASS		(11111111)," &
+		"      ISC_DATA_SHIFT		(00001010)," &
+		"       ISC_DISCHARGE		(00010100)," &
+		"            USERCODE		(11000000)," &
+		"      ISC_ERASE_DONE		(00100100)," &
+		"               CLAMP		(01111000)," &
+		"   ISC_ADDRESS_SHIFT		(01000010)," &
+		"             PRELOAD		(00011100)," &
+		"            ISC_READ		(10000000)," &
+		"         ISC_DISABLE		(00100110)," &
+		"           ISC_ERASE		(00001110)," &
+		"            ISC_NOOP		(00110000)," &
+		"              SAMPLE		(00011100)," &
+		"               HIGHZ		(00011000)," &
+		"              EXTEST		(00010101)," &
+		"PRIVATE	(00000010, 00111010, 00110010, 10111010, " &
+			"11011100, 11110001, 00101100, 11010000, " &
+			"11110110, 11110100, 10010110, 10110010, " &
+			"01000110, 11011000, 10111000, 10011101, " &
+			"10100010, 11111010, 01110010, 10001111, " &
+			"01110000, 11110111, 00101110, 11010110, " &
+			"00111011, 00010110, 11110011, 10011100, " &
+			"11101000, 01101010, 00111110, 01111101, " &
+			"10010000, 11010001, 11010111, 00101101, " &
+			"11011101, 11001010, 00111000, 01100000, " &
+			"11110010, 11111000, 10000010, 00111001, " &
+			"00100010, 11011110, 00111100, 11010100, " &
+			"11110000, 10011111, 00010001, 11010101, " &
+			"01101001, 01110011, 11100111, 10100100, " &
+			"11011111, 00011001, 11011010, 00110011, " &
+			"11111001, 10110100, 10110000, 01111010, " &
+			"10110110, 11001011, 01111001, 11100100, " &
+			"00100000, 10111100, 11001001, 10011110, " &
+			"11111011, 11010011, 01000111)";
+
+  attribute INSTRUCTION_CAPTURE of LCMXO2_256HC_QFN32 : entity is 
+                                  "XXXXXX01";
+  attribute INSTRUCTION_PRIVATE of LCMXO2_256HC_QFN32 : entity is 
+                                  "PRIVATE";
+
+--IDCODE and USERCODE register definition
+	attribute IDCODE_REGISTER of LCMXO2_256HC_QFN32 : entity is
+		"0000" &	--Version number
+		"0001001010111000" &	--Device specific number
+		"000001000011";	--Company code
+
+	attribute USERCODE_REGISTER of LCMXO2_256HC_QFN32 : entity is
+		"11111111111111111111111111111111";
+
+	attribute REGISTER_ACCESS of LCMXO2_256HC_QFN32 : entity is
+		"ISC_ADDRESS[186]		(ISC_ADDRESS_SHIFT), " &
+		"ISC_SECTOR[8]		(ISC_ERASE), " &
+		"ISC_DEFAULT[1]		(ISC_DISABLE, " &
+		"			 ISC_NOOP, " &
+		"			 ISC_DISCHARGE, " &
+		"			 ISC_PROGRAM_DONE, " &
+		"			 ISC_ERASE_DONE, " &
+		"			 ISC_PROGRAM_SECURITY, " &
+		"			 LSC_PROGRAM_SECPLUS), " &
+		"BYPASS		(CLAMP, " &
+		"			 HIGHZ, " &
+		"			 BYPASS), " &
+		"ISC_DATA[504]		(ISC_DATA_SHIFT), " &
+		"ISC_CONFIG[8]		(ISC_ENABLE, " &
+		"			 LSC_ENABLE_X), " &
+		"ISC_PDATA[504]		(ISC_PROGRAM, " &
+		"			 ISC_READ), " &
+		"BOUNDARY		(EXTEST, " &
+		"			 PRELOAD, " &
+		"			 SAMPLE), " &
+		"DEVICE_ID		(IDCODE, " &
+		"			 USERCODE, " &
+		"			 ISC_PROGRAM_USERCODE)"; 
+
+-- *****************************************************************
+-- Boundary Scan Register Description, Cell 0 is the closest to TDO 
+-- *****************************************************************
+	attribute BOUNDARY_LENGTH of LCMXO2_256HC_QFN32 : entity is 104;
+	attribute BOUNDARY_REGISTER of LCMXO2_256HC_QFN32 : entity is
+
+		"103 (BC_1, *, internal, X), " &
+		"102 (BC_1, *, internal, 1), " &
+		"101 (BC_1, *, internal, X), " &
+		"100 (BC_1, *, internal, 1), " &
+		"99 (BC_1, *, internal, X), " &
+		"98 (BC_1, *, internal, 1), " &
+		"97 (BC_1, *, internal, X), " &
+		"96 (BC_1, *, internal, 1), " &
+		"95 (BC_7, PT8C, bidir, X, 94, 1, Z), " &
+		"94 (BC_2, *, control, 1), " &
+		"93 (BC_7, PT8D, bidir, X, 92, 1, Z), " &
+		"92 (BC_2, *, control, 1), " &
+		"91 (BC_7, PT9A, bidir, X, 90, 1, Z), " &
+		"90 (BC_2, *, control, 1), " &
+		"89 (BC_7, PT9B, bidir, X, 88, 1, Z), " &
+		"88 (BC_2, *, control, 1), " &
+		"87 (BC_1, *, internal, X), " &
+		"86 (BC_1, *, internal, 1), " &
+		"85 (BC_7, PT9D, bidir, X, 84, 1, Z), " &
+		"84 (BC_2, *, control, 1), " &
+		"83 (BC_1, *, internal, X), " &
+		"82 (BC_1, *, internal, 1), " &
+		"81 (BC_1, *, internal, X), " &
+		"80 (BC_1, *, internal, 1), " &
+		"79 (BC_1, *, internal, X), " &
+		"78 (BC_1, *, internal, 1), " &
+		"77 (BC_1, *, internal, X), " &
+		"76 (BC_1, *, internal, 1), " &
+		"75 (BC_1, *, internal, X), " &
+		"74 (BC_1, *, internal, 1), " &
+		"73 (BC_1, *, internal, X), " &
+		"72 (BC_1, *, internal, 1), " &
+		"71 (BC_7, PR5A, bidir, X, 70, 1, Z), " &
+		"70 (BC_2, *, control, 1), " &
+		"69 (BC_7, PR5B, bidir, X, 68, 1, Z), " &
+		"68 (BC_2, *, control, 1), " &
+		"67 (BC_1, *, internal, X), " &
+		"66 (BC_1, *, internal, 1), " &
+		"65 (BC_1, *, internal, X), " &
+		"64 (BC_1, *, internal, 1), " &
+		"63 (BC_1, *, internal, X), " &
+		"62 (BC_1, *, internal, 1), " &
+		"61 (BC_1, *, internal, X), " &
+		"60 (BC_1, *, internal, 1), " &
+		"59 (BC_1, *, internal, X), " &
+		"58 (BC_1, *, internal, 1), " &
+		"57 (BC_1, *, internal, X), " &
+		"56 (BC_1, *, internal, 1), " &
+		"55 (BC_7, PB9B, bidir, X, 54, 1, Z), " &
+		"54 (BC_2, *, control, 1), " &
+		"53 (BC_7, PB9A, bidir, X, 52, 1, Z), " &
+		"52 (BC_2, *, control, 1), " &
+		"51 (BC_1, *, internal, X), " &
+		"50 (BC_1, *, internal, 1), " &
+		"49 (BC_1, *, internal, X), " &
+		"48 (BC_1, *, internal, 1), " &
+		"47 (BC_1, *, internal, X), " &
+		"46 (BC_1, *, internal, 1), " &
+		"45 (BC_1, *, internal, X), " &
+		"44 (BC_1, *, internal, 1), " &
+		"43 (BC_7, PB4D, bidir, X, 42, 1, Z), " &
+		"42 (BC_2, *, control, 1), " &
+		"41 (BC_7, PB4C, bidir, X, 40, 1, Z), " &
+		"40 (BC_2, *, control, 1), " &
+		"39 (BC_7, PB4B, bidir, X, 38, 1, Z), " &
+		"38 (BC_2, *, control, 1), " &
+		"37 (BC_7, PB4A, bidir, X, 36, 1, Z), " &
+		"36 (BC_2, *, control, 1), " &
+		"35 (BC_7, PB2D, bidir, X, 34, 1, Z), " &
+		"34 (BC_2, *, control, 1), " &
+		"33 (BC_7, PB2C, bidir, X, 32, 1, Z), " &
+		"32 (BC_2, *, control, 1), " &
+		"31 (BC_1, *, internal, X), " &
+		"30 (BC_1, *, internal, 1), " &
+		"29 (BC_7, PB2A, bidir, X, 28, 1, Z), " &
+		"28 (BC_2, *, control, 1), " &
+		"27 (BC_1, *, internal, X), " &
+		"26 (BC_1, *, internal, 1), " &
+		"25 (BC_1, *, internal, X), " &
+		"24 (BC_1, *, internal, 1), " &
+		"23 (BC_7, PL5D, bidir, X, 22, 1, Z), " &
+		"22 (BC_2, *, control, 1), " &
+		"21 (BC_7, PL5C, bidir, X, 20, 1, Z), " &
+		"20 (BC_2, *, control, 1), " &
+		"19 (BC_1, *, internal, X), " &
+		"18 (BC_1, *, internal, 1), " &
+		"17 (BC_1, *, internal, X), " &
+		"16 (BC_1, *, internal, 1), " &
+		"15 (BC_1, *, internal, X), " &
+		"14 (BC_1, *, internal, 1), " &
+		"13 (BC_1, *, internal, X), " &
+		"12 (BC_1, *, internal, 1), " &
+		"11 (BC_1, *, internal, X), " &
+		"10 (BC_1, *, internal, 1), " &
+		"9 (BC_1, *, internal, X), " &
+		"8 (BC_1, *, internal, 1), " &
+		"7 (BC_1, *, internal, X), " &
+		"6 (BC_1, *, internal, 1), " &
+		"5 (BC_1, *, internal, X), " &
+		"4 (BC_1, *, internal, 1), " &
+		"3 (BC_1, *, internal, X), " &
+		"2 (BC_1, *, internal, 1), " &
+		"1 (BC_1, *, internal, X), " &
+		"0 (BC_1, *, internal, 1)";
+
+end LCMXO2_256HC_QFN32;
