@@ -27,10 +27,24 @@ from .bsdl import BSDLReader
 
 SPACE = "[ \r\n\t]*"
 
-RE_OPCODE = re.compile(f"{SPACE}(?P<instruction>[A-Za-z_]+){SPACE}\\((?P<opcode>[01]+(,{SPACE}[01]+)*)\\){SPACE}(,)?")
-RE_CELL = re.compile(f"{SPACE}(?P<index>[0-9]+){SPACE}\\((?P<format>[^\\)]*)\\)({SPACE},)?")
+RE_OPCODE = re.compile(f"{SPACE}(?P<instruction>[A-Za-z][A-Za-z_0-9]*){SPACE}\\((?P<opcode>[01]+(,{SPACE}[01]+)*)\\){SPACE}(,)?")
+RE_CELL = re.compile(f"{SPACE}(?P<index>[0-9]+){SPACE}\\((?P<format>([^\\)\\(]*(\\([^\\)]*\\))*)*)\\)({SPACE},)?")
 
 logger = logging.getLogger(__name__)
+
+class StdLogicPattern:
+    """Bit pattern supporting std_logic values"""
+    def __init__(self, pattern):
+        for c in pattern.upper():
+            if not c in "01X": raise Exception(f"{c} not supported in bit pattern")
+        print(pattern)
+        self.pattern = pattern.upper()
+
+    def __eq__(self, other):
+        if len(self.pattern) != len(other): return False
+        for c1, c2 in zip(self.pattern, other):
+            if c1 != "X" and int(c1) != int(c2): return False
+        return True
 
 class Cell:
     """Represents a boundary scan cell"""
@@ -57,26 +71,26 @@ class Cell:
     def parse(cls, num, parameters):
         return cls(num, *[p.strip() for p in parameters.split(",")])
 
-class Pin72:
-    """Represents a pin with control (BC_2) & data (BC_7) cell"""
+class Pin:
+    """Represents a pin with control & data cell"""
     def __init__(self, name, data_cell, control_cell):
         self.name = name
         self.data_cell = data_cell
         self.control_cell = control_cell
 
-        if self.data_cell.cell != "BC_7": raise Exception("Not supported")
-        if self.control_cell.cell != "BC_2": raise Exception("Not supported")
-
     def output_enabled(self):
+        if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
         return self.control_cell.value != self.data_cell.out_dis_ctl
     
     def output_enable(self, enable=True):
+        if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
         if enable:
             self.control_cell.value = [1, 0][self.data_cell.out_dis_ctl]
         else:
             self.control_cell.value = self.data_cell.out_dis_ctl
 
     def set_value(self, value):
+        if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
         self.data_cell.value = 1 if value else 0
 
     def __repr__(self):
@@ -96,7 +110,7 @@ class Device:
         self.pinmap = {}
         for cell in self.cells:
             if cell.port != "*":
-                pin = Pin72(cell.port, cell, self.cells[cell.ctl_cell] if not cell.ctl_cell is None else None)
+                pin = Pin(cell.port, cell, self.cells[cell.ctl_cell] if not cell.ctl_cell is None else None)
                 self.pinmap[pin.name] = pin
 
     def update_br(self, br):
@@ -116,8 +130,7 @@ class Device:
             attributes = BSDLReader.parse(f)
 
         irlen = int(attributes['INSTRUCTION_LENGTH'])
-        idcode = bitarray(attributes['IDCODE_REGISTER'][1:-1])
-        idcode.reverse()
+        idcode = StdLogicPattern(attributes['IDCODE_REGISTER'][-2:0:-1])
 
         opcodes = {}
         opcode_str = attributes['INSTRUCTION_OPCODE'][1:-1]
@@ -140,7 +153,7 @@ class Device:
         brlen = int(attributes['BOUNDARY_LENGTH'])
 
         cells = [None] * brlen
-        cell_str = attributes['BOUNDARY_REGISTER'][1:-1]
+        cell_str = attributes['BOUNDARY_REGISTER'][1:-1].strip()
         while True:
             m = RE_CELL.match(cell_str)
             if m:
