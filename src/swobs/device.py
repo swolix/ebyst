@@ -37,7 +37,6 @@ class StdLogicPattern:
     def __init__(self, pattern):
         for c in pattern.upper():
             if not c in "01X": raise Exception(f"{c} not supported in bit pattern")
-        print(pattern)
         self.pattern = pattern.upper()
 
     def __eq__(self, other):
