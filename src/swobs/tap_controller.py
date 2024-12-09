@@ -146,8 +146,12 @@ class TapController:
         except:
             self.chain_valid = False
             raise
+        finally:
+            self._goto(State.TEST_LOGIC_RESET)
 
     def extest(self):
+        self.in_extest = False
+        self.reset()
         self.load_instruction(self.chain[0].opcodes['EXTEST'])
         self.in_extest = True
     
