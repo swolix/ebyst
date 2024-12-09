@@ -30,10 +30,15 @@ class Driver:
         for tms in tms_str:
             self.transfer(tms, tdi)
     
-    def transmit_tdi_str(self, tdi_str: bitarray, first_tms=0, last_tms=0):
+    def transfer_tdi_tdo_str(self, tdi_str: bitarray, first_tms=0, last_tms=0) -> bitarray:
+        r = bitarray()
         for tdi in tdi_str[:-1]:
-            self.transfer(first_tms, tdi)
-        self.transfer(last_tms, tdi_str[-1])
+            r.append(self.transfer(first_tms, tdi))
+        r.append(self.transfer(last_tms, tdi_str[-1]))
+        return r
+
+    def transmit_tdi_str(self, tdi_str: bitarray, first_tms=0, last_tms=0):
+        self.transfer_tdi_tdo_str(tdi_str, first_tms, last_tms)
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
         if last_tms is None: last_tms = first_tms

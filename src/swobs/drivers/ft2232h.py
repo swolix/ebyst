@@ -33,6 +33,12 @@ class FT2232H(Driver):
         self.ftdi = Ftdi()
         self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=60000.0, latency=16, debug=True)
 
+    def transfer(self, tms, tdi):
+        self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if tdi else 0) | (1 if tms else 0))))
+        rd = self.ftdi.read_data(1)
+        if len(rd) == 0: raise Exception("Read error from FTDI")
+        return (rd[0] & 0x80) >> 7
+
     def transmit_tms_str(self, tms_str: bitarray, tdi=0):
         tdi = 0x80 if tdi else 0
         for i in range(0, len(tms_str), 7):
@@ -45,6 +51,7 @@ class FT2232H(Driver):
         if len(tdi_str) < 1: raise ValueError("n must be > 0")
         if len(tdi_str) == 1 and first_tms != last_tms: raise ValueError("last_tms must be first_tms when n == 1")
 
+        tdi_str = tdi_str.copy()
         last_tdi = tdi_str.pop()
         if len(tdi_str) > 0:
             self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (tdi_str[0] << 7) | (1 if first_tms else 0))))
@@ -54,11 +61,26 @@ class FT2232H(Driver):
                 self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_NVE_LSB, len(part)-1, ba2int(part))))
         self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (last_tdi << 7) | (1 if last_tms else 0))))
 
-    def transfer(self, tms, tdi):
-        self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_NVE_PVE, 0, (0x80 if tdi else 0) | (1 if tms else 0))))
-        rd = self.ftdi.read_data(1)
-        if len(rd) == 0: raise Exception("Read error from FTDI")
-        return (rd[0] & 0x80) >> 7
+    def transfer_tdi_tdo_str(self, tdi_str: bitarray, first_tms=0, last_tms=0) -> bitarray:
+        r = bitarray()
+        if last_tms is None: last_tms = first_tms
+        if len(tdi_str) < 1: raise ValueError("n must be > 0")
+        if len(tdi_str) == 1 and first_tms != last_tms: raise ValueError("last_tms must be first_tms when n == 1")
+
+        tdi_str = tdi_str.copy()
+        last_tdi = tdi_str.pop()
+
+        i = 0
+        if len(tdi_str) > 0:
+            r.append(self.transfer(first_tms, tdi_str[0]))
+            i += 1
+        for i in range(1, len(tdi_str), 8):
+            part = tdi_str[i:i+8].copy()
+            part.reverse()
+            self.ftdi.write_data(bytearray((Ftdi.RW_BITS_PVE_NVE_LSB, len(part)-1, ba2int(part))))
+            r += int2ba(self.ftdi.read_data(1)[0] >> (8 - len(part)), len(part), 'little')
+        r.append(self.transfer(last_tms, last_tdi))
+        return r
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
         r = bitarray()
@@ -115,6 +137,17 @@ class FT2232H(Driver):
 
             self.transmit_tdi_str(bitarray("11001"))
             self.transmit_tdi_str(bitarray("1111111100000001"))
+
+            for i in ("0", "1", "01", "10", "001", "100", "110011001", "00110011010011"):
+                i = bitarray(i)
+                o = self.transfer_tdi_tdo_str(bitarray(i))
+                assert i == o
+            for i in range(50):
+                tdi = bitarray()
+                for _ in range(random.randint(1, 200)):
+                    tdi.append(random.randint(0, 1))
+                tdo = self.transfer_tdi_tdo_str(tdi)
+                assert tdi == tdo
 
             for tms in (0, 1):
                 for first_tdi in (0, 1):

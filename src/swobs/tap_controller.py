@@ -80,7 +80,7 @@ class TapController:
     def read_write_register(self, tdi: bitarray):
         if not self.chain_valid: raise Exception("Chain not validated")
         self._goto(State.SHIFT_DR)
-        tdo = self.driver.transmit_tdi_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
+        tdo = self.driver.transfer_tdi_tdo_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
         self._goto(State.UPDATE_DR)
         return tdo
