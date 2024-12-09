@@ -56,7 +56,9 @@ class FT2232H(Driver):
 
     def transfer(self, tms, tdi):
         self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_NVE_PVE, 0, (0x80 if tdi else 0) | (1 if tms else 0))))
-        return (self.ftdi.read_data(1)[0] & 0x80) >> 7
+        rd = self.ftdi.read_data(1)
+        if len(rd) == 0: raise Exception("Read error from FTDI")
+        return (rd[0] & 0x80) >> 7
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
         r = bitarray()
