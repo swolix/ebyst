@@ -151,6 +151,10 @@ class TapController:
 
     def extest(self):
         self.in_extest = False
+        self.load_instruction(self.chain[0].opcodes['PRELOAD'])
+        br = self.chain[0].generate_br()
+        br = self.read_write_register(br)
+        self.chain[0].update_br(br)
         self.load_instruction(self.chain[0].opcodes['EXTEST'])
         self.in_extest = True
     
