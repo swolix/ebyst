@@ -147,11 +147,10 @@ class TapController:
             self.chain_valid = False
             raise
         finally:
-            self._goto(State.TEST_LOGIC_RESET)
+            self._goto(State.RUN_TEST_IDLE)
 
     def extest(self):
         self.in_extest = False
-        self.reset()
         self.load_instruction(self.chain[0].opcodes['EXTEST'])
         self.in_extest = True
     
@@ -159,6 +158,7 @@ class TapController:
         if not self.in_extest: raise Exception("Must call extest() first")
         br = self.chain[0].generate_br()
         br = self.read_write_register(br)
+        self.chain[0].update_br(br)
 
     def _goto(self, target_state: State, tdi=0):
         state = self.state
