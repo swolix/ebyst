@@ -6,6 +6,7 @@ import random
 import time
 from bitarray import bitarray
 from bitarray.util import int2ba
+from pyftdi.ftdi import Ftdi
 
 import swobs
 
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
 
-    drv = swobs.drivers.FT2232H("ftdi://ftdi:2232:251633009FEC/1")
+    drv = swobs.drivers.FT2232H(swobs.drivers.FT2232H.list_devices()[0])
     dev = swobs.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
     ctl = swobs.TapController(drv)
     ctl.detect_chain()

@@ -33,6 +33,13 @@ class FT2232H(Driver):
         self.ftdi = Ftdi()
         self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=60000.0, latency=16, debug=True)
 
+    @staticmethod
+    def list_devices():
+        urls = []
+        for dev, ifaces in Ftdi.list_devices():
+            urls.append(f"ftdi://0x{dev.vid:04x}:0x{dev.pid:04x}:{dev.sn}/1")
+        return urls
+
     def transfer(self, tms, tdi):
         self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if tdi else 0) | (1 if tms else 0))))
         rd = self.ftdi.read_data(1)
