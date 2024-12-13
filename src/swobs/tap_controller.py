@@ -62,7 +62,7 @@ class TapController:
 
     def load_instruction(self, instruction: bitarray):
         if not self.chain_valid: raise Exception("Chain not validated")
-        logger.info(f"Loading instruction {instruction}")
+        logger.debug(f"Loading instruction {instruction}")
         self._goto(State.SHIFT_IR)
         self.driver.transmit_tdi_str(instruction, first_tms=0 if len(instruction) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_IR
@@ -158,7 +158,7 @@ class TapController:
         self.load_instruction(self.chain[0].opcodes['EXTEST'])
         self.in_extest = True
     
-    def apply(self):
+    def cycle(self):
         if not self.in_extest: raise Exception("Must call extest() first")
         br = self.chain[0].generate_br()
         br = self.read_write_register(br)

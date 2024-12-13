@@ -56,12 +56,14 @@ class Cell:
         self.ctl_cell = int(ctl_cell) if not ctl_cell is None else None
         self.out_dis_ctl = int(out_dis_ctl) if not out_dis_ctl is None else None
         self.out_dis_val = out_dis_val
+        self.in_value = None
+        self.out_value = 0
 
         self.set_safe()
 
     def set_safe(self):
         if self.safe.upper() != 'X':
-            self.value = int(self.safe)
+            self.out_value = int(self.safe)
 
     def __repr__(self):
         return f"{self.cell} @ {self.num}"
@@ -79,24 +81,28 @@ class Pin:
 
     def output_enabled(self):
         if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
-        return self.control_cell.value != self.data_cell.out_dis_ctl
+        return self.control_cell.out_value != self.data_cell.out_dis_ctl
     
     def output_enable(self, enable=True):
         if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
         if enable:
-            self.control_cell.value = [1, 0][self.data_cell.out_dis_ctl]
+            self.control_cell.out_value = [1, 0][self.data_cell.out_dis_ctl]
         else:
-            self.control_cell.value = self.data_cell.out_dis_ctl
+            self.control_cell.out_value = self.data_cell.out_dis_ctl
 
     def set_value(self, value):
         if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
-        self.data_cell.value = 1 if value else 0
+        self.data_cell.out_value = 1 if value else 0
+
+    def get_value(self):
+        if self.data_cell.cell != "BC_7" or self.control_cell.cell != "BC_2": raise Exception("Not supported")
+        return self.data_cell.out_value if self.output_enabled() else self.data_cell.in_value
 
     def __repr__(self):
         if self.output_enabled():
-            return f"<PIN {self.name}: output: {self.data_cell.value}>"
+            return f"<PIN {self.name}: output: {self.data_cell.out_value}>"
         else:
-            return f"<PIN {self.name}: input>: {self.data_cell.value}>"
+            return f"<PIN {self.name}: input>: {self.data_cell.in_value}>"
 
 class Device:
     def __init__(self, irlen, idcode=None, opcodes=None, cells=[]):
@@ -115,12 +121,12 @@ class Device:
     def update_br(self, br):
         if len(br) != len(self.cells): raise ValueError("Invalid br length")
         for i, v in enumerate(br):
-            self.cells[i].value = v
+            self.cells[i].in_value = v
 
     def generate_br(self):
         r = bitarray()
         for cell in self.cells:
-            r.append(cell.value)
+            r.append(cell.out_value)
         return r
 
     @staticmethod

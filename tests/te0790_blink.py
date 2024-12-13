@@ -25,13 +25,14 @@ if __name__ == "__main__":
     ctl.extest()
 
     try:
+        dev.pinmap['PB2D'].output_enable()
         while True:
             dev.pinmap['PB2D'].set_value(1)
-            ctl.apply()
+            ctl.cycle()
             time.sleep(0.5)
 
             dev.pinmap['PB2D'].set_value(0)
-            ctl.apply()
+            ctl.cycle()
             time.sleep(0.5)
     finally:
         ctl.reset()
