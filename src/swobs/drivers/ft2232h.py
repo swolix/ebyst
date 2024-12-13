@@ -70,7 +70,6 @@ class FT2232H(Driver):
         self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (last_tdi << 7) | (1 if last_tms else 0))))
 
     def transfer_tdi_tdo_str(self, tdi_str: bitarray, first_tms=0, last_tms=0) -> bitarray:
-        r = bitarray()
         if last_tms is None: last_tms = first_tms
         if len(tdi_str) < 1: raise ValueError("n must be > 0")
         if len(tdi_str) == 1 and first_tms != last_tms: raise ValueError("last_tms must be first_tms when n == 1")
@@ -78,16 +77,26 @@ class FT2232H(Driver):
         tdi_str = tdi_str.copy()
         last_tdi = tdi_str.pop()
 
+        # NOTE: write all commands first, read results below for highest throughput,
+        #       requires enough buffer size on FTDI/PC, not sure if this is an issue
+
         i = 0
         if len(tdi_str) > 0:
-            r.append(self.transfer(first_tms, tdi_str[0]))
+            self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if tdi_str[0] else 0) | (1 if first_tms else 0))))
             i += 1
         for i in range(1, len(tdi_str), 8):
             part = tdi_str[i:i+8].copy()
             part.reverse()
             self.ftdi.write_data(bytearray((Ftdi.RW_BITS_PVE_NVE_LSB, len(part)-1, ba2int(part))))
+        self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if last_tdi else 0) | (1 if last_tms else 0))))
+
+        r = bitarray()
+        if len(tdi_str) > 0:
+            r.append(self.ftdi.read_data(1)[0] & 1)
+        for i in range(1, len(tdi_str), 8):
+            part = tdi_str[i:i+8]
             r += int2ba(self.ftdi.read_data(1)[0] >> (8 - len(part)), len(part), 'little')
-        r.append(self.transfer(last_tms, last_tdi))
+        r.append(self.ftdi.read_data(1)[0] & 1)
         return r
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
