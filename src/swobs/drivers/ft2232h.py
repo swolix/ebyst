@@ -32,6 +32,7 @@ class FT2232H(Driver):
         self.url = url
         self.ftdi = Ftdi()
         self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=60000.0, latency=16, debug=True)
+        self.ftdi.reset()
 
     @staticmethod
     def list_devices():
