@@ -31,8 +31,14 @@ class FT2232H(Driver):
 
         self.url = url
         self.ftdi = Ftdi()
-        self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=60000.0, latency=16, debug=True)
+        self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=60000.0, latency=1)
         self.ftdi.reset()
+
+    def _read_bytes(self, count):
+        r = bytearray()
+        while len(r) < count:
+            r += self.ftdi.read_data(count - len(r))
+        return r
 
     @staticmethod
     def list_devices():
@@ -43,8 +49,7 @@ class FT2232H(Driver):
 
     def transfer(self, tms, tdi):
         self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if tdi else 0) | (1 if tms else 0))))
-        rd = self.ftdi.read_data(1)
-        if len(rd) == 0: raise Exception("Read error from FTDI")
+        rd = self._read_bytes(1)
         return (rd[0] & 0x80) >> 7
 
     def transmit_tms_str(self, tms_str: bitarray, tdi=0):
@@ -92,11 +97,11 @@ class FT2232H(Driver):
 
         r = bitarray()
         if len(tdi_str) > 0:
-            r.append(self.ftdi.read_data(1)[0] & 1)
+            r.append(self._read_bytes(1)[0] & 1)
         for i in range(1, len(tdi_str), 8):
             part = tdi_str[i:i+8]
-            r += int2ba(self.ftdi.read_data(1)[0] >> (8 - len(part)), len(part), 'little')
-        r.append(self.ftdi.read_data(1)[0] & 1)
+            r += int2ba(self._read_bytes(1)[0] >> (8 - len(part)), len(part), 'little')
+        r.append(self._read_bytes(1)[0] & 1)
         return r
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
@@ -111,17 +116,17 @@ class FT2232H(Driver):
             n = n - 1
         while n > 256+8:
             self.ftdi.write_data(bytearray((Ftdi.READ_BYTES_PVE_LSB, 31, 0)))
-            for x in self.ftdi.read_data(32):
+            for x in self._read_bytes(32):
                 r += int2ba(x, 8, 'little')
             n = n - 256
         while n > 8:
             self.ftdi.write_data(bytearray((Ftdi.READ_BYTES_PVE_LSB, 0, 0)))
-            for x in self.ftdi.read_data(1):
+            for x in self._read_bytes(1):
                 r += int2ba(x, 8, 'little')
             n = n - 8
         if n > 1:
             self.ftdi.write_data(bytearray((Ftdi.READ_BITS_PVE_LSB, n - 2)))
-            x = self.ftdi.read_data(1)
+            x = self._read_bytes(1)
             r += int2ba(x[0] >> (9 - n), n - 1, 'little') # TODO; is this right?
             n = 1
         if n > 0:
