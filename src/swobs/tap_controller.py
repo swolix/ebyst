@@ -77,6 +77,13 @@ class TapController:
         self._goto(State.UPDATE_DR)
         return tdo
 
+    def write_register(self, tdi: bitarray):
+        if not self.chain_valid: raise Exception("Chain not validated")
+        self._goto(State.SHIFT_DR)
+        self.driver.transmit_tdi_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
+        self.state = State.EXIT1_DR
+        self._goto(State.UPDATE_DR)
+
     def read_write_register(self, tdi: bitarray):
         if not self.chain_valid: raise Exception("Chain not validated")
         self._goto(State.SHIFT_DR)
@@ -158,11 +165,14 @@ class TapController:
         self.load_instruction(self.chain[0].opcodes['EXTEST'])
         self.in_extest = True
     
-    def cycle(self):
+    def cycle(self, sample=True):
         if not self.in_extest: raise Exception("Must call extest() first")
         br = self.chain[0].generate_br()
-        br = self.read_write_register(br)
-        self.chain[0].update_br(br)
+        if sample:
+            br = self.read_write_register(br)
+            self.chain[0].update_br(br)
+        else:
+            self.write_register(br)
 
     def _goto(self, target_state: State, tdi=0):
         state = self.state

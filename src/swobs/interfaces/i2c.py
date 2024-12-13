@@ -23,51 +23,51 @@ class I2C:
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(0)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SCL.set_value(0)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
     
     def _clock_out_bit(self, bit: int):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(bit)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SCL.set_value(1)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SCL.set_value(0)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
 
     def _clock_in_bit(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(False)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SCL.set_value(1)
         self.ctl.cycle()
         r = self.SDA.get_value()
         self.SCL.set_value(0)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         return r
 
     def _restart(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(1)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SCL.set_value(1)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SDA.set_value(0)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SCL.set_value(0)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
 
 
     def _stop(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SCL.set_value(1)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
         self.SDA.set_value(1)
-        self.ctl.cycle()
+        self.ctl.cycle(sample=False)
 
     def write(self, dev_address, reg_address, data):
         self._start()
