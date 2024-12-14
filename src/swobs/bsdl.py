@@ -46,38 +46,47 @@ class BSDLFile:
     def parse(cls, f):
         comments = "--" + pp.SkipTo(pp.LineEnd())
         identifier = pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]"))
-        string = pp.Combine(pp.QuotedString("\"") + pp.ZeroOrMore(pp.Suppress(pp.Literal("&")) + pp.QuotedString("\"")), adjacent=False)
-        value = pp.Forward()
-        tuple_ = pp.Suppress(pp.Literal("(")) + value + pp.ZeroOrMore(pp.Suppress(pp.Literal(",")) + value) + pp.Suppress(pp.Literal(")"))
-        value <<= pp.Or((pp.pyparsing_common.sci_real, pp.pyparsing_common.integer, string, identifier, tuple_))
-        direction = pp.Or((pp.CaselessKeyword("in"), pp.CaselessKeyword("out"), pp.CaselessKeyword("inout"),
-                        pp.CaselessKeyword("buffer"), pp.CaselessKeyword("linkage")))
+        string_literal = pp.Combine(pp.QuotedString("\"") +
+                                    pp.ZeroOrMore(pp.Suppress(pp.Literal("&")) + pp.QuotedString("\"")), adjacent=False)
+        numeric_literal = pp.Or((pp.pyparsing_common.sci_real, pp.pyparsing_common.integer))
+        primary = pp.Forward()
+        enumeration_literal = (pp.Suppress(pp.Literal("(")) + primary +
+                               pp.ZeroOrMore(pp.Suppress(pp.Literal(",")) + primary) + pp.Suppress(pp.Literal(")")))
+        literal = pp.Or((numeric_literal, enumeration_literal, string_literal))
+        primary <<= pp.Or((identifier, literal))
+        expression = primary
+        mode = pp.Or((pp.CaselessKeyword("in"), pp.CaselessKeyword("out"), pp.CaselessKeyword("inout"),
+                     pp.CaselessKeyword("buffer"), pp.CaselessKeyword("linkage")))
         range = (pp.Suppress(pp.Literal("(")) + pp.pyparsing_common.integer +
-                pp.Or((pp.CaselessKeyword("to"), pp.CaselessKeyword("downto"))) +
-                pp.pyparsing_common.integer + pp.Suppress(pp.Literal(")")))
+                 pp.Or((pp.CaselessKeyword("to"), pp.CaselessKeyword("downto"))) +
+                 pp.pyparsing_common.integer + pp.Suppress(pp.Literal(")")))
+        subtype_indication = identifier + pp.Optional(range)
         declaration = pp.Group(identifier + pp.Suppress(pp.Literal(":")) +
-                            pp.Optional(direction) + identifier + pp.Optional(pp.Tag("range") + range) +
-                            pp.Optional(pp.Tag("value") + pp.Suppress(pp.Literal(":=")) + value))
-        generic_clause = pp.Group(pp.CaselessKeyword("generic") + pp.Suppress(pp.Literal("(")) +
-                                pp.Optional(declaration + pp.ZeroOrMore(pp.Suppress(pp.Literal(";")) + declaration)) +
-                                pp.Suppress(pp.Literal(")")) + pp.Suppress(pp.Literal(";")))
-        port_clause = pp.Group(pp.CaselessKeyword("port") + pp.Suppress(pp.Literal("(")) +
-                            pp.Optional(declaration + pp.ZeroOrMore(pp.Suppress(pp.Literal(";")) + declaration)) +
-                            pp.Suppress(pp.Literal(")")) + pp.Suppress(pp.Literal(";")))
-        use_clause = pp.Group(pp.CaselessKeyword("use") + identifier + pp.ZeroOrMore(pp.Literal(".") + identifier) +
-                            pp.Suppress(pp.Literal(";")))
-        attribute = pp.Group(pp.CaselessKeyword("attribute") + identifier +
-                            pp.Suppress(pp.CaselessKeyword("of")) + identifier +
-                            pp.Suppress(pp.Literal(":")) + identifier +
-                            pp.Suppress(pp.CaselessKeyword("is")) + value +
-                            pp.Suppress(pp.Literal(";")))
-        constant = pp.Group(pp.CaselessKeyword("constant") + declaration + pp.Suppress(pp.Literal(";")))
-        entity = (pp.Suppress(pp.CaselessKeyword("entity")) + identifier + pp.Suppress(pp.CaselessKeyword("is")) +
-                pp.Optional(generic_clause) + pp.Optional(port_clause) +
-                pp.ZeroOrMore(pp.Or((use_clause, attribute, constant))) +
-                pp.Suppress(pp.CaselessKeyword("end") + pp.Optional(pp.CaselessKeyword("entity")) + pp.Optional(identifier)) +
-                pp.Suppress(pp.Literal(";")))
-        bsdl_file = entity + pp.StringEnd()
+                            pp.Optional(mode) + subtype_indication +
+                            pp.Optional(pp.Suppress(pp.Literal(":=")) + expression))
+        interface_list = declaration + pp.ZeroOrMore(pp.Suppress(pp.Literal(";")) + declaration)
+        generic_clause = pp.Group(pp.CaselessKeyword("generic") + pp.Suppress(pp.Literal("(")) + interface_list +
+                                  pp.Suppress(pp.Literal(")")) + pp.Suppress(pp.Literal(";")))
+        port_clause = pp.Group(pp.CaselessKeyword("port") + pp.Suppress(pp.Literal("(")) + interface_list +
+                               pp.Suppress(pp.Literal(")")) + pp.Suppress(pp.Literal(";")))
+        use_clause = pp.Group(pp.CaselessKeyword("use") + identifier + pp.Literal(".") + identifier +
+                              pp.ZeroOrMore(pp.Literal(",") + identifier) +
+                              pp.Suppress(pp.Literal(";")))
+        class_ = pp.Or((pp.CaselessKeyword("entity"), pp.CaselessKeyword("signal")))
+        attribute_specification = pp.Group(pp.CaselessKeyword("attribute") + identifier +
+                                           pp.Suppress(pp.CaselessKeyword("of")) + identifier +
+                                           pp.Suppress(pp.Literal(":")) + class_ +
+                                           pp.Suppress(pp.CaselessKeyword("is")) + expression +
+                                           pp.Suppress(pp.Literal(";")))
+        constant_declaration = pp.Group(pp.CaselessKeyword("constant") + declaration + pp.Suppress(pp.Literal(";")))
+        entity_header = pp.Optional(generic_clause) + pp.Optional(port_clause)
+        entity_declarative_item = pp.Or((use_clause, attribute_specification, constant_declaration))
+        entity_declaration = (pp.Suppress(pp.CaselessKeyword("entity")) + identifier + pp.Suppress(pp.CaselessKeyword("is")) +
+                              entity_header + pp.ZeroOrMore(entity_declarative_item) +
+                              pp.Suppress(pp.CaselessKeyword("end") + pp.Optional(pp.CaselessKeyword("entity")) +
+                                          pp.Optional(identifier)) +
+                              pp.Suppress(pp.Literal(";")))
+        bsdl_file = entity_declaration + pp.StringEnd()
 
         bsdl_file.ignore(comments)
 
