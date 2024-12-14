@@ -33,7 +33,7 @@ if __name__ == "__main__":
         i2c.write(0xa0, 0x10, 0xa5)
         print(f"Reading {dev_address:02x}:{reg_address:02x} => ", end='')
         x = i2c.read(0xa0, 0x10)
-        print(f"{data:02x}")
+        print(f"{x:02x}")
 
         assert x == 0xa5
     finally:
