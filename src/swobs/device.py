@@ -23,7 +23,7 @@ from pprint import pprint
 
 from bitarray import bitarray
 
-from .bsdl import BSDLReader
+from .bsdl import BSDLFile
 
 SPACE = "[ \r\n\t]*"
 
@@ -132,13 +132,13 @@ class Device:
     @staticmethod
     def from_bsdl(fn):
         with open(fn, "rt") as f:
-            attributes = BSDLReader.parse(f)
+            bsdi_file = BSDLFile.parse(f)
 
-        irlen = int(attributes['INSTRUCTION_LENGTH'])
-        idcode = StdLogicPattern(attributes['IDCODE_REGISTER'][-2:0:-1])
+        irlen = int(bsdi_file.attributes['INSTRUCTION_LENGTH'].value)
+        idcode = StdLogicPattern(bsdi_file.attributes['IDCODE_REGISTER'].value[::-1])
 
         opcodes = {}
-        opcode_str = attributes['INSTRUCTION_OPCODE'][1:-1]
+        opcode_str = bsdi_file.attributes['INSTRUCTION_OPCODE'].value
         while True:
             m = RE_OPCODE.match(opcode_str)
             if m:
@@ -155,10 +155,10 @@ class Device:
                 break
         if len(opcode_str) != 0: raise Exception("Invalid INSTRUCTION_OPCODE format")
 
-        brlen = int(attributes['BOUNDARY_LENGTH'])
+        brlen = int(bsdi_file.attributes['BOUNDARY_LENGTH'].value)
 
         cells = [None] * brlen
-        cell_str = attributes['BOUNDARY_REGISTER'][1:-1].strip()
+        cell_str = bsdi_file.attributes['BOUNDARY_REGISTER'].value.strip()
         while True:
             m = RE_CELL.match(cell_str)
             if m:
