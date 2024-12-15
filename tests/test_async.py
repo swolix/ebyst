@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-import swobs
+import ebyst
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +18,9 @@ async def loopback_test(ctl, opin, ipin, count):
 async def main():
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
-    drv = swobs.drivers.FT2232H(swobs.drivers.FT2232H.list_devices()[0])
-    dev = swobs.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
-    ctl = swobs.TapController(drv)
+    drv = ebyst.drivers.FT2232H(ebyst.drivers.FT2232H.list_devices()[0])
+    dev = ebyst.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
+    ctl = ebyst.TapController(drv)
     ctl.detect_chain()
     ctl.add_device(dev)
     ctl.validate_chain()

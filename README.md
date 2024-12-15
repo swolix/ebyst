@@ -1,15 +1,15 @@
-# SWOBS
+# EByST
 Boundary scan test framework for board validation
 
 # Basic example
 ```python
 # initialize JTAG interface driver (currently only FT2232H is supported)
-drv = swobs.drivers.FT2232H(swobs.drivers.FT2232H.list_devices()[0])
-ctl = swobs.TapController(drv)
+drv = ebyst.drivers.FT2232H(ebyst.drivers.FT2232H.list_devices()[0])
+ctl = ebyst.TapController(drv)
 ctl.detect_chain()
 
 # Add device(s) to chain
-dev = swobs.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
+dev = ebyst.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
 ctl.add_device(dev)
 ctl.validate_chain()
 
@@ -29,7 +29,7 @@ await ctl.cycle() # sample input
 print(dev.pinmap['I'].get_value())
 
 # I2C test
-i2c = swobs.interfaces.I2C(ctl, dev.pinmap['PB9A'], dev.pinmap['PB4B'])
+i2c = ebyst.interfaces.I2C(ctl, dev.pinmap['PB9A'], dev.pinmap['PB4B'])
 await i2c.init()
 dev_address = 0xa0
 reg_address = 0x10
@@ -50,11 +50,11 @@ meaning they run completely parallel
 schedule them appropriately)
 
 Example;
-```
+```python
 async def main():
-    drv = swobs.drivers.FT2232H(swobs.drivers.FT2232H.list_devices()[0])
-    dev = swobs.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
-    ctl = swobs.TapController(drv)
+    drv = ebyst.drivers.FT2232H(ebyst.drivers.FT2232H.list_devices()[0])
+    dev = ebyst.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
+    ctl = ebyst.TapController(drv)
     ctl.detect_chain()
     ctl.add_device(dev)
     ctl.validate_chain()

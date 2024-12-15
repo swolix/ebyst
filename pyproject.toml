@@ -1,9 +1,10 @@
 [project]
-name = "swobs"
-version = "0.0.1"
+name = "ebyst"
+version = "0.1.0"
 dependencies = [
     "pyftdi",
     "bitarray",
+    "pyparsing",
 ]
 authors = [
   { name="Sijmen Woutersen", email="sijmen.woutersen@gmail.com" },
@@ -18,8 +19,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/swolix/swobs"
-Issues = "https://github.com/swolix/swobs/issues"
+Homepage = "https://github.com/swolix/ebyst"
+Issues = "https://github.com/swolix/ebyst/issues"
 
 [build-system]
 requires = ["hatchling"]

@@ -2,7 +2,7 @@
 import os
 import logging
 
-import swobs
+import ebyst
 
 logger = logging.getLogger(__name__)
 
@@ -22,4 +22,4 @@ if __name__ == "__main__":
 
     for fn in get_all_bsdls("bsdl"):
         logger.info(f"Parsing {fn}")
-        dev = swobs.Device.from_bsdl(fn)
+        dev = ebyst.Device.from_bsdl(fn)
