@@ -12,106 +12,105 @@ class I2C:
         self.address_bits = address_bits
         self.data_bits = data_bits
 
-    def init(self):
+    async def init(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SCL.set_value(1)
         self.SDA.set_value(1)
-        self.ctl.cycle()
+        await self.ctl.cycle()
 
-    def _start(self):
+    async def _start(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(0)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SCL.set_value(0)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
     
-    def _clock_out_bit(self, bit: int):
+    async def _clock_out_bit(self, bit: int):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(bit)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SCL.set_value(1)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SCL.set_value(0)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
 
-    def _clock_in_bit(self):
+    async def _clock_in_bit(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(False)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SCL.set_value(1)
-        self.ctl.cycle()
+        await self.ctl.cycle()
         r = self.SDA.get_value()
         self.SCL.set_value(0)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         return r
 
-    def _restart(self):
+    async def _restart(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(1)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SCL.set_value(1)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SDA.set_value(0)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SCL.set_value(0)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
 
-
-    def _stop(self):
+    async def _stop(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SCL.set_value(1)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
         self.SDA.set_value(1)
-        self.ctl.cycle(sample=False)
+        await self.ctl.cycle(sample=False)
 
-    def write(self, dev_address, reg_address, data):
-        self._start()
+    async def write(self, dev_address, reg_address, data):
+        await self._start()
 
         for i in range(7):
-            self._clock_out_bit((dev_address >> (7-i)) & 1)
-        self._clock_out_bit(0)
-        if self._clock_in_bit(): raise I2C.NackError()
+            await self._clock_out_bit((dev_address >> (7-i)) & 1)
+        await self._clock_out_bit(0)
+        if await self._clock_in_bit(): raise I2C.NackError()
 
         for i in range(self.address_bits):
-            self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
-        if self._clock_in_bit(): raise I2C.NackError()
+            await self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
+        if await self._clock_in_bit(): raise I2C.NackError()
 
         for i in range(8):
-            self._clock_out_bit((data >> (7-i)) & 1)
-        if self._clock_in_bit(): raise I2C.NackError()
+            await self._clock_out_bit((data >> (7-i)) & 1)
+        if await self._clock_in_bit(): raise I2C.NackError()
 
-        self._stop()
+        await self._stop()
 
-    def read(self, dev_address, reg_address):
+    async def read(self, dev_address, reg_address):
         d = 0
-        self._start()
+        await self._start()
 
         for i in range(7):
-            self._clock_out_bit((dev_address >> (7-i)) & 1)
-        self._clock_out_bit(0)
-        self._clock_in_bit()
+            await self._clock_out_bit((dev_address >> (7-i)) & 1)
+        await self._clock_out_bit(0)
+        await self._clock_in_bit()
 
         for i in range(self.address_bits):
-            self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
-        self._clock_in_bit()
+            await self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
+        await self._clock_in_bit()
 
-        self._restart()
+        await self._restart()
 
         for i in range(7):
-            self._clock_out_bit((dev_address >> (7-i)) & 1)
-        self._clock_out_bit(1)
-        self._clock_in_bit()
+            await self._clock_out_bit((dev_address >> (7-i)) & 1)
+        await self._clock_out_bit(1)
+        await self._clock_in_bit()
 
         for i in range(8):
             d <<= 1 
-            d |= self._clock_in_bit()
-        self._clock_in_bit()
+            d |= await self._clock_in_bit()
+        await self._clock_in_bit()
 
-        self._stop()
+        await self._stop()
 
         return d
