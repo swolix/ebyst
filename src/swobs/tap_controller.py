@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from enum import IntEnum
+from enum import Enum, IntEnum
 import logging
 import asyncio
 
@@ -48,13 +48,54 @@ class State(IntEnum):
     EXIT2_IR = 25
     UPDATE_IR = 26
 
+class Opcode(Enum):
+    BYPASS = "BYPASS"
+    IDCODE = "IDCODE"
+    SAMPLE = "SAMPLE"
+    PRELOAD = "PRELOAD"
+    EXTEST = "EXTEST"
+
 class TapController:
+    class Chain(list):
+        """Chain of devices, 0 is close to TDI"""
+        def __init__(self, *args, **kwargs):
+            list.__init__(self, *args, **kwargs)
+            self.validated = False
+
+        @property
+        def brlen(self):
+            r = 0
+            for dev in self:
+                r += len(dev.cells)
+            return r
+
+        def generate_ir(self, instruction):
+            tdi_str = bitarray()
+            for dev in self:
+                try:
+                    tdi_str = dev.opcodes[instruction.value] + tdi_str
+                except KeyError:
+                    raise Exception(f"Instruction {instruction} not supported by all devices in chain")
+            return tdi_str
+
+        def generate_br(self):
+            tdi_str = bitarray()
+            for dev in self:
+                tdi_str = dev.generate_br() + tdi_str
+            return tdi_str
+
+        def update_br(self, br):
+            o = 0
+            for dev in self:
+                l = len(dev.cells)
+                dev.update_br(br[o:o+l])
+                o += l
+
     def __init__(self, driver: Driver, no_parallel=False):
         self.driver = driver
         self.driver.reset()
         self.state = State.TEST_LOGIC_RESET
-        self.chain = []
-        self.chain_valid = False
+        self.chain = TapController.Chain()
         self.in_extest = False
         self.no_parallel = no_parallel
         self.cycle_counter = 0
@@ -64,17 +105,18 @@ class TapController:
         self.driver.reset()
         self.state = State.TEST_LOGIC_RESET
 
-    def load_instruction(self, instruction: bitarray):
-        if not self.chain_valid: raise Exception("Chain not validated")
+    def load_instruction(self, instruction: Opcode):
+        if not self.chain.validated: raise Exception("Chain not validated")
+        tdi_str = self.chain.generate_ir(instruction)
         logger.debug(f"Loading instruction {instruction}")
         self._goto(State.SHIFT_IR)
-        self.driver.transmit_tdi_str(instruction, first_tms=0 if len(instruction) > 1 else 1, last_tms=1)
+        self.driver.transmit_tdi_str(tdi_str, first_tms=0 if len(tdi_str) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_IR
         self._goto(State.UPDATE_IR)
         self.in_extest = False
 
     def read_register(self, n: int):
-        if not self.chain_valid: raise Exception("Chain not validated")
+        if not self.chain.validated: raise Exception("Chain not validated")
         self._goto(State.SHIFT_DR)
         tdo = self.driver.receive_tdo_str(n, first_tms=0 if n > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
@@ -82,14 +124,14 @@ class TapController:
         return tdo
 
     def write_register(self, tdi: bitarray):
-        if not self.chain_valid: raise Exception("Chain not validated")
+        if not self.chain.validated: raise Exception("Chain not validated")
         self._goto(State.SHIFT_DR)
         self.driver.transmit_tdi_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
         self._goto(State.UPDATE_DR)
 
     def read_write_register(self, tdi: bitarray):
-        if not self.chain_valid: raise Exception("Chain not validated")
+        if not self.chain.validated: raise Exception("Chain not validated")
         self._goto(State.SHIFT_DR)
         tdo = self.driver.transfer_tdi_tdo_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
@@ -132,41 +174,42 @@ class TapController:
     def add_device(self, device: Device):
         """Add device to chain"""
         self.chain.append(device)
-        self.chain_valid = False
+        self.chain.validated = False
 
     def validate_chain(self):
         """Validate configured chain"""
         drlen, irlen = self.detect_chain()
         if len(self.chain) != 1:
-            raise Exception("Multiple devices in chain are not supported")
+            logger.warning("Multiple devices in chain are not tested")
         if drlen != len(self.chain):
             raise Exception("Incorrect nr of devices in chain ({drlen} detected)")
         if irlen != sum(dev.irlen for dev in self.chain):
             raise Exception("Incorrect total ir length ({irlen} detected)")
         
         try:
-            self.chain_valid = True
-            self.load_instruction(self.chain[0].opcodes['IDCODE'])
-            idcode = self.read_register(32)
-            if idcode != self.chain[0].idcode:
-                raise Exception("IDCode doesn't match")
+            self.chain.validated = True
+            self.load_instruction(Opcode.IDCODE)
+            idcode = self.read_register(32*drlen)
+            for i, dev in enumerate(self.chain):
+                if idcode[len(idcode)-i*32-32:len(idcode)-i*32] != dev.idcode:
+                    raise Exception(f"IDCode doesn't match for device {i}")
             
-            self.load_instruction(self.chain[0].opcodes['SAMPLE'])
-            br = self.read_register(len(self.chain[0].cells))
-            self.chain[0].update_br(br)
+            self.load_instruction(Opcode.SAMPLE)
+            br = self.read_register(self.chain.brlen)
+            self.chain.update_br(br)
         except:
-            self.chain_valid = False
+            self.chain.validated = False
             raise
         finally:
             self._goto(State.RUN_TEST_IDLE)
 
     def extest(self):
         self.in_extest = False
-        self.load_instruction(self.chain[0].opcodes['PRELOAD'])
-        br = self.chain[0].generate_br()
+        self.load_instruction(Opcode.SAMPLE)
+        br = self.chain.generate_br()
         br = self.read_write_register(br)
-        self.chain[0].update_br(br)
-        self.load_instruction(self.chain[0].opcodes['EXTEST'])
+        self.chain.update_br(br)
+        self.load_instruction(Opcode.EXTEST)
         self.in_extest = True
     
     async def cycle(self, sample=True):
@@ -182,10 +225,10 @@ class TapController:
         if not self.no_parallel: await asyncio.sleep(0)
         if cycle_counter == self.cycle_counter:
             # nobody else performed the cycle while we where sleeping => we do it
-            br = self.chain[0].generate_br()
+            br = self.chain.generate_br()
             if self.sample:
                 br = self.read_write_register(br)
-                self.chain[0].update_br(br)
+                self.chain.update_br(br)
             else:
                 self.write_register(br)
             self.cycle_counter += 1

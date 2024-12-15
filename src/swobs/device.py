@@ -45,6 +45,12 @@ class StdLogicPattern:
             if c1 != "X" and int(c1) != int(c2): return False
         return True
 
+    def __str__(self):
+        return f"StdLogicPattern('{self.pattern}')"
+
+    def to_bitarray(self):
+        return bitarray(self.pattern.replace("X", "0"))
+
 class Cell:
     """Represents a boundary scan cell"""
     def __init__(self, num, cell, port, function, safe, ctl_cell=None, out_dis_ctl=None, out_dis_val=None):

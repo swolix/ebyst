@@ -59,13 +59,21 @@ class Sim(Driver):
                 next_state = State.SELECT_IR_SCAN
         elif self.state == State.CAPTURE_DR:
             if self.ir == self.device.opcodes['IDCODE']:
-                logger.debug("Shifting out ID code")
-                self.shift_dr = self.device.idcode
+                logger.info("Shifting out ID code")
+                self.shift_dr = self.device.idcode.to_bitarray()
                 self.dr_size = 32
             elif self.ir == self.device.opcodes['BYPASS']:
-                logger.debug("Bypass")
+                logger.info("Bypass")
                 self.shift_dr = bitarray('0')
                 self.dr_size = 1
+            elif self.ir == self.device.opcodes['SAMPLE']:
+                logger.info("Sample")
+                self.shift_dr = bitarray('0')
+                self.dr_size = len(self.device.cells)
+            elif self.ir == self.device.opcodes['EXTEST']:
+                logger.info("Extest")
+                self.shift_dr = bitarray('0')
+                self.dr_size = len(self.device.cells)
             else:
                 logger.warning(f"Unknown IR bin({self.ir})")
                 self.shift_dr = bitarray('0')
