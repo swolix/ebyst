@@ -19,6 +19,7 @@
 # SOFTWARE.
 from enum import IntEnum
 import logging
+import asyncio
 
 from bitarray import bitarray
 
@@ -48,13 +49,16 @@ class State(IntEnum):
     UPDATE_IR = 26
 
 class TapController:
-    def __init__(self, driver: Driver):
+    def __init__(self, driver: Driver, no_parallel=False):
         self.driver = driver
         self.driver.reset()
         self.state = State.TEST_LOGIC_RESET
         self.chain = []
         self.chain_valid = False
         self.in_extest = False
+        self.no_parallel = no_parallel
+        self.cycle_counter = 0
+        self.sample = True
 
     def reset(self):
         self.driver.reset()
@@ -165,14 +169,27 @@ class TapController:
         self.load_instruction(self.chain[0].opcodes['EXTEST'])
         self.in_extest = True
     
-    def cycle(self, sample=True):
-        if not self.in_extest: raise Exception("Must call extest() first")
-        br = self.chain[0].generate_br()
-        if sample:
-            br = self.read_write_register(br)
-            self.chain[0].update_br(br)
-        else:
-            self.write_register(br)
+    async def cycle(self, sample=True):
+        """Cycle the boundary scan register when in extest() mode; updates the output pins,
+            and samples the input pins
+
+            sample: Write and read BR (if only writing; sample can be set to False providing a small speedup)
+        """
+        # Force a reschedule before cycling BR, this allows all tasks to share a BR cycle.
+        # If we are awaken again, and no other task performed the cycle; we execute it.
+        cycle_counter = self.cycle_counter
+        self.sample |= sample # OR sample flags from all tasks
+        if not self.no_parallel: await asyncio.sleep(0)
+        if cycle_counter == self.cycle_counter:
+            # nobody else performed the cycle while we where sleeping => we do it
+            br = self.chain[0].generate_br()
+            if self.sample:
+                br = self.read_write_register(br)
+                self.chain[0].update_br(br)
+            else:
+                self.write_register(br)
+            self.cycle_counter += 1
+            self.sample = False
 
     def _goto(self, target_state: State, tdi=0):
         state = self.state

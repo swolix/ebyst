@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-import os, sys
-import argparse
 import logging
-import random
+import asyncio
 import time
 from bitarray import bitarray
 from bitarray.util import int2ba
@@ -11,6 +9,17 @@ from pyftdi.ftdi import Ftdi
 import swobs
 
 logger = logging.getLogger(__name__)
+
+async def blink(ctl):
+    dev.pinmap['PB2D'].output_enable()
+    while True:
+        dev.pinmap['PB2D'].set_value(1)
+        await ctl.cycle()
+        time.sleep(0.5)
+
+        dev.pinmap['PB2D'].set_value(0)
+        await ctl.cycle()
+        time.sleep(0.5)
 
 if __name__ == "__main__":
     logging.basicConfig()
@@ -25,14 +34,8 @@ if __name__ == "__main__":
     ctl.extest()
 
     try:
-        dev.pinmap['PB2D'].output_enable()
-        while True:
-            dev.pinmap['PB2D'].set_value(1)
-            ctl.cycle()
-            time.sleep(0.5)
-
-            dev.pinmap['PB2D'].set_value(0)
-            ctl.cycle()
-            time.sleep(0.5)
+        asyncio.run(blink(ctl))
+    except KeyboardInterrupt:
+        pass
     finally:
         ctl.reset()
