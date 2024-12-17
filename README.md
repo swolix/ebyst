@@ -3,8 +3,8 @@ Boundary scan test framework for board validation
 
 # Basic example
 ```python
-# initialize JTAG interface driver (currently only FT2232H is supported)
-drv = ebyst.drivers.FT2232H(ebyst.drivers.FT2232H.list_devices()[0])
+# initialize JTAG interface driver (currently only FTDI chips with MPSSE are supported)
+drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices()[0])
 ctl = ebyst.TapController(drv)
 ctl.detect_chain()
 
@@ -52,7 +52,7 @@ schedule them appropriately)
 Example;
 ```python
 async def main():
-    drv = ebyst.drivers.FT2232H(ebyst.drivers.FT2232H.list_devices()[0])
+    drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices()[0])
     dev = ebyst.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
     ctl = ebyst.TapController(drv)
     ctl.detect_chain()
