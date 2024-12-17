@@ -12,5 +12,5 @@ if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
 
-    drv = ebyst.drivers.FT2232H("ftdi://ftdi:2232:251633009FEC/1")
+    drv = ebyst.drivers.MPSSE("ftdi://ftdi:2232:251633009FEC/1")
     drv.test()

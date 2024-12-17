@@ -25,7 +25,7 @@ if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
 
-    drv = ebyst.drivers.FT2232H(ebyst.drivers.FT2232H.list_devices()[0])
+    drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices()[0])
     dev = ebyst.Device.from_bsdl("bsdl/BSDLLCMXO2-256HCQFN32.BSM")
     ctl = ebyst.TapController(drv)
     ctl.detect_chain()

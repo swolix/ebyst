@@ -21,11 +21,12 @@ import time
 from bitarray import bitarray
 from bitarray.util import ba2int, int2ba
 
+import pyftdi
 from pyftdi.ftdi import Ftdi
 
 from .driver import Driver
 
-class FT2232H(Driver):
+class MPSSE(Driver):
     def __init__(self, url):
         Driver.__init__(self)
 
@@ -41,7 +42,19 @@ class FT2232H(Driver):
         return r
 
     @staticmethod
-    def list_devices():
+    def aaa():
+        Ftdi.add_custom_vendor(0x1514)
+        Ftdi.add_custom_product(0x1514, 0x2008)
+        Ftdi.show_devices()
+        print(Ftdi.list_devices())
+
+
+    @staticmethod
+    def list_devices(custom_product_ids=[]):
+        for custom_product_id in custom_product_ids:
+            Ftdi.add_custom_vendor(custom_product_id[0])
+            Ftdi.add_custom_product(custom_product_id[0], custom_product_id[1])
+
         urls = []
         for dev, ifaces in Ftdi.list_devices():
             urls.append(f"ftdi://0x{dev.vid:04x}:0x{dev.pid:04x}:{dev.sn}/1")
