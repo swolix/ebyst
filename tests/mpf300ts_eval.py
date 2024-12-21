@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 async def leds(ctl, dev):
     LEDS = ['IO_H21', 'IO_H22', 'IO_F23', 'IO_C27', 'IO_D25', 'IO_C26', 'IO_B26', 'IO_F22']
-    while True:
+    for i in range(10):
         for pin in LEDS + LEDS[::-1]:
             dev.pinmap[pin].output_enable()
             dev.pinmap[pin].set_value(1)
@@ -22,9 +22,17 @@ async def leds(ctl, dev):
             dev.pinmap[pin].set_value(0)
 
 async def flash(ctl, dev):
-    flash = MT25QU01GBBB(ctl, C=dev.pinmap["IO_H19"], Sn=dev.pinmap["IO_A20"], RESETn=dev.pinmap["IO_A24"],
-                              WPn=dev.pinmap["IO_A27"], HOLDn=dev.pinmap["IO_A22"],
-                              DQ0=dev.pinmap["IO_G19"], DQ1=dev.pinmap["IO_C18"])
+    pins = {
+        'C':        dev.pinmap["IO_H19"],
+        'Sn':       dev.pinmap["IO_A20"],
+        'RESETn':   dev.pinmap["IO_A24"],
+        'WPn':      dev.pinmap["IO_A27"],
+        'HOLDn':    dev.pinmap["IO_A22"],
+        'DQ0':      dev.pinmap["IO_G19"],
+        'DQ1':      dev.pinmap["IO_C18"],
+    }
+    ctl.trace("flash.vcd", **pins)
+    flash = MT25QU01GBBB(ctl, **pins)
 
     await flash.init()
     print("Flash ID:", (await flash.read_id()).hex())

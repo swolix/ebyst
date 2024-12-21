@@ -25,6 +25,7 @@ from bitarray import bitarray
 
 from .drivers.driver import Driver
 from .device import Device
+from .trace import Trace
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ class TapController:
         self.no_parallel = no_parallel
         self.cycle_counter = 0
         self.sample = True
+        self.traces = []
 
     def reset(self):
         self.driver.reset()
@@ -231,8 +233,12 @@ class TapController:
                 self.chain.update_br(br)
             else:
                 self.write_register(br)
+            for trace in self.traces: trace.snapshot()
             self.cycle_counter += 1
             self.sample = False
+
+    def trace(self, fn, **pins):
+        self.traces.append(Trace(fn, **pins))
 
     def _goto(self, target_state: State, tdi=0):
         state = self.state

@@ -87,17 +87,27 @@ class Pin:
         self.control_cell = None
 
     def output_enabled(self):
-        if self.control_cell is None or self.output_cell is None:
-            raise Exception(f"Pin {self.name} has no control cell")
-        return self.control_cell.out_value != self.output_cell.out_dis_ctl
+        if self.output_cell is None:
+            return False
+        elif self.control_cell is None:
+            if self.input_cell is None:
+                return True
+            else:
+                raise Exception(f"Pin {self.name} has no control cell")
+        else:
+            return self.control_cell.out_value != self.output_cell.out_dis_ctl
     
     def output_enable(self, enable=True):
-        if self.control_cell is None or self.output_cell is None:
-            raise Exception(f"Pin {self.name} has no control cell")
-        if enable:
-            self.control_cell.out_value = [1, 0][self.output_cell.out_dis_ctl]
+        if self.output_cell is None:
+            raise Exception(f"Pin {self.name} has no output cell")
+        elif self.control_cell is None:
+            if not self.input_cell is None:
+                raise Exception(f"Pin {self.name} has no control cell")
         else:
-            self.control_cell.out_value = self.output_cell.out_dis_ctl
+            if enable:
+                self.control_cell.out_value = [1, 0][self.output_cell.out_dis_ctl]
+            else:
+                self.control_cell.out_value = self.output_cell.out_dis_ctl
 
     def set_value(self, value):
         if self.output_cell is None:
@@ -105,15 +115,18 @@ class Pin:
         self.output_cell.out_value = 1 if value else 0
 
     def get_value(self):
-        if self.input_cell is None:
+        if self.output_enabled():
+            return self.output_cell.out_value
+        elif self.input_cell is None:
             raise Exception(f"Pin {self.name} has no input cell")
-        return self.input_cell.in_value
+        else:
+            return self.input_cell.in_value
 
     def __repr__(self):
         if self.output_enabled():
-            return f"<PIN {self.name}: output: {self.output_cell.out_value}>"
+            return f"<PIN {self.name}: output: {self.get_value()}>"
         else:
-            return f"<PIN {self.name}: input>: {self.input_cell.in_value}>"
+            return f"<PIN {self.name}: input>: {self.get_value()}>"
 
 class Device:
     def __init__(self, irlen, idcode=None, opcodes=None, cells=[]):
