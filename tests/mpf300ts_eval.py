@@ -7,7 +7,7 @@ from bitarray.util import int2ba
 
 import ebyst
 
-from ebyst.interfaces import MT25QU01GBBB
+from ebyst.interfaces import MT25QU01GBBB, MDIO
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,29 @@ async def flash(ctl, dev):
     await flash.init()
     print("Flash ID:", (await flash.read_id()).hex())
 
+async def mdio(ctl, dev):
+    pins = {
+        'MDC':      dev.pinmap["IO_Y12"],
+        'MDIO':     dev.pinmap["IO_Y13"],
+    }
+    ctl.trace("mdio.vcd", **pins)
+    mdio = MDIO(ctl, **pins)
+
+    # PHY ID
+    for pin in ("IO_Y7", "IO_AA7", "IO_AA9"):
+        dev.pinmap[pin].output_enable()
+        dev.pinmap[pin].set_value(0)
+
+    # PHY RESET
+    dev.pinmap["IO_U11"].output_enable()
+    dev.pinmap["IO_U11"].set_value(0)
+    await ctl.cycle()
+    dev.pinmap["IO_U11"].set_value(1)
+    await ctl.cycle()
+
+    await mdio.init()
+    print("PHY ID: 0x%04x %04x" % (await mdio.read(0, 2), await mdio.read(0, 3)))
+
 async def main():
     drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices([(0x1514, 0x2008)])[0])
     dev = ebyst.Device.from_bsdl("bsdl/MPF300TSFCG1152.bsdl")
@@ -51,6 +74,7 @@ async def main():
         async with asyncio.TaskGroup() as tg:
             tg.create_task(leds(ctl, dev))
             tg.create_task(flash(ctl, dev))
+            tg.create_task(mdio(ctl, dev))
     except KeyboardInterrupt:
         pass
     finally:
