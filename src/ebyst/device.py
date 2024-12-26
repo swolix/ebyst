@@ -115,18 +115,15 @@ class Pin:
         self.output_cell.out_value = 1 if value else 0
 
     def get_value(self):
-        if self.output_enabled():
-            return self.output_cell.out_value
-        elif self.input_cell is None:
+        if self.input_cell is None:
             raise Exception(f"Pin {self.name} has no input cell")
-        else:
-            return self.input_cell.in_value
+        return self.input_cell.in_value
 
     def __repr__(self):
         if self.output_enabled():
-            return f"<PIN {self.name}: output: {self.get_value()}>"
+            return f"<PIN {self.name}: output: {self.output_cell.out_value}>"
         else:
-            return f"<PIN {self.name}: input>: {self.get_value()}>"
+            return f"<PIN {self.name}: input>: {self.input_cell.in_value}>"
 
 class DiffPin(tuple):
     """Differential pin pair"""

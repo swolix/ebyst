@@ -30,7 +30,7 @@ class Trace:
         self.f.write(f"$timescale 1ps $end\n")
         self.f.write(f"$scope module TOP $end\n")
         for i, name in enumerate(pins):
-            if isinstance(pins[name], list) or isinstance(pins[name], tuple):
+            if isinstance(pins[name], list):
                 n = len(pins[name])
             else:
                 n = 1
@@ -42,35 +42,17 @@ class Trace:
         self.f.close()
 
     def snapshot(self):
-        for name, pin in self.pins.items():
-            if isinstance(pin, list) or isinstance(pin, tuple):
-                if not pin[0].output_enabled():
-                    s = ""
-                    for pin in pin:
-                        if pin.output_enabled(): raise Exception("Mixed direction vectors are not supported")
-                        v = pin.get_value()
-                        if v is None: v = 'X'
-                        s = str(v) + s
-                    self.f.write(f"b{s} {self.ids[name]}\n")
-            else:
-                if not pin.output_enabled():
-                    v = pin.get_value()
-                    if v is None: v = 'X'
-                    self.f.write(f"{v}{self.ids[name]}\n")
         self.f.write(f"#{self.t}\n")
         for name, pin in self.pins.items():
-            if isinstance(pin, list) or isinstance(pin, tuple):
-                if pin[0].output_enabled():
-                    s = ""
-                    for pin in pin:
-                        if not pin.output_enabled(): raise Exception("Mixed direction vectors are not supported")
-                        v = pin.get_value()
-                        if v is None: v = 'X'
-                        s = str(v) + s
-                    self.f.write(f"b{s} {self.ids[name]}\n")
-            else:
-                if pin.output_enabled():
+            if isinstance(pin, list):
+                s = ""
+                for pin in pin:
                     v = pin.get_value()
                     if v is None: v = 'X'
-                    self.f.write(f"{v}{self.ids[name]}\n")
+                    s = str(v) + s
+                self.f.write(f"b{s} {self.ids[name]}\n")
+            else:
+                v = pin.get_value()
+                if v is None: v = 'X'
+                self.f.write(f"{v}{self.ids[name]}\n")
         self.t += 1
