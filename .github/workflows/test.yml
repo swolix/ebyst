@@ -1,0 +1,33 @@
+name: Test
+on: push
+
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+    - name: Setup venv
+      run: python3 -m venv venv;
+    - name: Activate venv
+      run: . venv/bin/activate;
+    - name: Upgrade pip
+      run: pip install --upgrade pip
+    - name: Install package
+      run: pip install .
+    - name: FSM test
+      run: ./test_fsm.py
+      working-directory: tests
+    - name: BSDL test
+      run: ./test_bsdl.py
+      working-directory: tests
+    - name: Chain test
+      run: ./test_chain.py
+      working-directory: tests
