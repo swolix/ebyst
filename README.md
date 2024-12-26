@@ -70,3 +70,14 @@ if __name__ == "__main__":
 ```
 
 see also `tests/test_async.py`
+
+# Tracing
+Generate .vcd traces for selected pins;
+```python
+    pins = {
+        'MDC':      dev.pinmap["IO_Y12"],
+        'MDIO':     dev.pinmap["IO_Y13"],
+    }
+    ctl.trace("mdio.vcd", **pins)
+    mdio = MDIO(ctl, **pins)
+```
