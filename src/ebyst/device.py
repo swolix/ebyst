@@ -128,6 +128,56 @@ class Pin:
         else:
             return f"<PIN {self.name}: input>: {self.get_value()}>"
 
+class DiffPin(tuple):
+    """Differential pin pair"""
+    def __new__(cls, p: Pin, n: Pin):
+        return tuple.__new__(cls, (p, n))
+
+    def output_enable(self, enable=True):
+        self[0].output_enable(enable)
+        self[1].output_enable(enable)
+
+    def output_enabled(self):
+        return self[0].output_enabled()
+
+    def set_value(self, value):
+        self[0].set_value(1 if value else 0)
+        self[1].set_value(0 if value else 1)
+
+    def get_value(self):
+        return self[0].get_value()
+
+    def __repr__(self):
+        if self.output_enabled():
+            return f"<DIFFPIN {self.name}: output: {self.get_value()}>"
+        else:
+            return f"<DIFFPIN {self.name}: input>: {self.get_value()}>"
+
+class PinGroup(list):
+    """Group of pins to be read/written all at once"""
+    def __init__(self, initial):
+        list.__init__(self, initial)
+
+    def output_enable(self, enable=True):
+        for pin in self:
+            pin.output_enable(enable)
+
+    def output_enabled(self):
+        return self[0].output_enabled()
+
+    def set_value(self, value):
+        for (i, pin) in enumerate(self):
+            try:
+                pin.set_value(value[i])
+            except TypeError:
+                pin.set_value((value >> i) & 1)
+
+    def get_value(self):
+        r = bitarray()
+        for pin in self:
+            r.append(pin.get_value())
+        return r
+
 class Device:
     def __init__(self, irlen, idcode=None, opcodes=None, cells=[]):
         self.irlen = irlen

@@ -8,6 +8,7 @@ from bitarray.util import int2ba
 import ebyst
 
 from ebyst.interfaces import MT25QU01GBBB, MDIO
+from ebyst import Pin, PinGroup, DiffPin
 
 logger = logging.getLogger(__name__)
 
