@@ -23,6 +23,9 @@ class Driver:
     def reset(self):
         self.transmit_tms_str(bitarray('11111'))
 
+    def set_freq(self, freq):
+        pass
+
     def transfer(self, tms: int, tdi: int) -> int:
         raise NotImplementedError()
 

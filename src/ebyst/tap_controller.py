@@ -94,6 +94,7 @@ class TapController:
 
     def __init__(self, driver: Driver, no_parallel=False):
         self.driver = driver
+        self.driver.set_freq(100e3)
         self.driver.reset()
         self.state = State.TEST_LOGIC_RESET
         self.chain = TapController.Chain()
@@ -187,7 +188,14 @@ class TapController:
             raise Exception("Incorrect nr of devices in chain ({drlen} detected)")
         if irlen != sum(dev.irlen for dev in self.chain):
             raise Exception("Incorrect total ir length ({irlen} detected)")
-        
+
+        max_freq = None
+        for dev in self.chain:
+            if max_freq is None or dev.max_freq < max_freq:
+                max_freq = dev.max_freq
+        if not max_freq is None:
+            self.driver.set_freq(max_freq)
+
         try:
             self.chain.validated = True
             self.load_instruction(Opcode.IDCODE)

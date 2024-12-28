@@ -32,22 +32,19 @@ class MPSSE(Driver):
 
         self.url = url
         self.ftdi = Ftdi()
-        self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=60000.0, latency=1)
+        self.ftdi.open_mpsse_from_url(self.url, direction=1|2|8, initial=0, frequency=1e6, latency=1)
         self.ftdi.reset()
+
+    def set_freq(self, freq):
+        freq_orig = freq
+        while self.ftdi.set_frequency(freq) > freq_orig:
+            freq *= 0.9
 
     def _read_bytes(self, count):
         r = bytearray()
         while len(r) < count:
             r += self.ftdi.read_data(count - len(r))
         return r
-
-    @staticmethod
-    def aaa():
-        Ftdi.add_custom_vendor(0x1514)
-        Ftdi.add_custom_product(0x1514, 0x2008)
-        Ftdi.show_devices()
-        print(Ftdi.list_devices())
-
 
     @staticmethod
     def list_devices(custom_product_ids=[]):

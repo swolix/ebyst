@@ -184,8 +184,9 @@ class PinGroup(list):
         return r
 
 class Device:
-    def __init__(self, irlen, idcode=None, opcodes=None, cells=[]):
+    def __init__(self, irlen, max_freq=None, idcode=None, opcodes=None, cells=[]):
         self.irlen = irlen
+        self.max_freq = max_freq
         self.idcode = idcode
         if opcodes is None: opcodes = {'BYPASS': bitarray('1' * irlen)}
         if not 'BYPASS' in opcodes: raise ValueError("BYPASS command is required")
@@ -223,6 +224,8 @@ class Device:
         with open(fn, "rt") as f:
             bsdi_file = BSDLFile.parse(f)
 
+        max_freq = float(bsdi_file.attributes["TAP_SCAN_CLOCK"].value)
+
         irlen = int(bsdi_file.attributes['INSTRUCTION_LENGTH'].value)
         idcode = StdLogicPattern(bsdi_file.attributes['IDCODE_REGISTER'].value[::-1])
 
@@ -258,4 +261,4 @@ class Device:
                 break
         if len(cell_str) != 0: raise Exception("Invalid BOUNDARY_REGISTER format")
 
-        return Device(irlen=irlen, idcode=idcode, opcodes=opcodes, cells=cells)
+        return Device(irlen=irlen, max_freq=max_freq, idcode=idcode, opcodes=opcodes, cells=cells)
