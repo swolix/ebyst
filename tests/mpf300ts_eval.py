@@ -216,6 +216,19 @@ async def ddr4(ctl, dev):
         await ddr4.test()
         print("DDR4: Done")
 
+async def clock(ctl, dev):
+    CLK50 = dev.pinmap["IO_E25"]
+    CLK50.output_enable(False)
+    ctl.trace("clock.vcd", trace_all=True, CLK50=CLK50)
+    ones = zeroes = 0
+    for _ in range(100):
+        await ctl.cycle()
+        if CLK50.get_value():
+            ones += 1
+        else:
+            zeroes += 1
+    if ones < 40 or zeroes < 40: raise Exception("Clock not ticking")
+
 async def main():
     drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices([(0x1514, 0x2008)])[0])
     dev = ebyst.Device.from_bsdl("bsdl/MPF300TSFCG1152.bsdl")
@@ -233,6 +246,7 @@ async def main():
             tg.create_task(mdio(ctl, dev))
             tg.create_task(ddr3(ctl, dev))
             tg.create_task(ddr4(ctl, dev))
+            tg.create_task(clock(ctl, dev))
     except KeyboardInterrupt:
         pass
     finally:
