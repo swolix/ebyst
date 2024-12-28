@@ -9,7 +9,7 @@ from bitarray.util import int2ba, ba2int
 
 import ebyst
 
-from ebyst.interfaces import MT25QU01GBBB, MDIO, DDR3
+from ebyst.interfaces import MT25QU01GBBB, MDIO, DDR3, DDR4
 from ebyst import Pin, PinGroup, DiffPin
 
 logger = logging.getLogger(__name__)
@@ -91,19 +91,130 @@ async def ddr3(ctl, dev):
     column = bitarray("0000000000000000")
 
     await ddr3.init()
+
     await ddr3.activate(ba=bank, ra=row)
     wdata = []
     for i in range(8):
-        wdata.append(int2ba(random.randint(0,256), 8))
-    print(f"DDR: Writing: {' '.join(['%02x' % ba2int(x) for x in wdata])}")
+        wdata.append(int2ba(random.randint(0, 255), 8))
+    print(f"DDR3: Writing: {' '.join(['%02x' % ba2int(x) for x in wdata])}")
     await ddr3.write(ba=bank, ca=column, data=wdata)
+    await ddr3.precharge(ba=bank)
+
+    await ddr3.activate(ba=bank, ra=row)
     rdata = await ddr3.read(ba=bank, ca=column)
     await ddr3.precharge(ba=bank)
-    print(f"DDR: Writing: {' '.join(['%02x' % ba2int(x) for x in rdata])}")
+    print(f"DDR3: Read back: {' '.join(['%02x' % ba2int(x) for x in rdata])}")
     if rdata == wdata:
-        print(f"DDR: OK")
+        print(f"DDR3: OK")
     else:
-        print(f"DDR: FAILED")
+        print(f"DDR3: FAILED")
+
+async def ddr4(ctl, dev):
+    pins_a = {
+        'DQ':       PinGroup([dev.pinmap["IO_AG10"], dev.pinmap["IO_AE12"], dev.pinmap["IO_AF10"], dev.pinmap["IO_AF12"],
+                              dev.pinmap["IO_AD10"], dev.pinmap["IO_AD13"], dev.pinmap["IO_AE10"], dev.pinmap["IO_AD14"]]),
+        'DQS':      DiffPin(dev.pinmap["IO_AE13"], dev.pinmap["IO_AF13"]),
+        'DM':       dev.pinmap["IO_AE11"],
+        'A':        PinGroup([dev.pinmap["IO_AE5"], dev.pinmap["IO_AF5"], dev.pinmap["IO_AF2"], dev.pinmap["IO_AF3"],
+                              dev.pinmap["IO_AH3"], dev.pinmap["IO_AJ3"], dev.pinmap["IO_AH1"], dev.pinmap["IO_AH2"],
+                              dev.pinmap["IO_AK3"], dev.pinmap["IO_AL3"], dev.pinmap["IO_AJ1"], dev.pinmap["IO_AK1"],
+                              dev.pinmap["IO_AH4"], dev.pinmap["IO_AJ4"]]),
+        'BA':       PinGroup([dev.pinmap["IO_AD8"], dev.pinmap["IO_AD6"]]),
+        'BG':       PinGroup([dev.pinmap["IO_AG7"], dev.pinmap["IO_AG6"]]),
+        'ODT':      PinGroup([dev.pinmap["IO_AE7"], dev.pinmap["IO_AF4"]]),
+        'CK':       DiffPin(dev.pinmap["IO_AG4"], dev.pinmap["IO_AG5"]),
+        'CKE':      PinGroup([dev.pinmap["IO_AG9"], dev.pinmap["IO_AF8"]]),
+        'CSn':      PinGroup([dev.pinmap["IO_AF9"], dev.pinmap["IO_AE3"]]),
+        'RASn':     dev.pinmap["IO_AD9"],
+        'CASn':     dev.pinmap["IO_AL2"],
+        'WEn':      dev.pinmap["IO_AK2"],
+        'ACTn':     dev.pinmap["IO_AE6"],
+        'ALERTn':   dev.pinmap["IO_AG2"],
+        'PARITY':   dev.pinmap["IO_AE8"],
+        'TEN':      dev.pinmap["IO_AG1"],
+        'RESETn':   dev.pinmap["IO_AF7"],
+    }
+    pins_b = {
+        'DQ':       PinGroup([dev.pinmap["IO_AH7"], dev.pinmap["IO_AJ9"], dev.pinmap["IO_AH6"], dev.pinmap["IO_AJ8"],
+                              dev.pinmap["IO_AH9"], dev.pinmap["IO_AK7"], dev.pinmap["IO_AK5"], dev.pinmap["IO_AK6"]]),
+        'DQS':      DiffPin(dev.pinmap["IO_AJ5"], dev.pinmap["IO_AJ6"]),
+        'DM':       dev.pinmap["IO_AK8"],
+        'A':        PinGroup([dev.pinmap["IO_AE5"], dev.pinmap["IO_AF5"], dev.pinmap["IO_AF2"], dev.pinmap["IO_AF3"],
+                              dev.pinmap["IO_AH3"], dev.pinmap["IO_AJ3"], dev.pinmap["IO_AH1"], dev.pinmap["IO_AH2"],
+                              dev.pinmap["IO_AK3"], dev.pinmap["IO_AL3"], dev.pinmap["IO_AJ1"], dev.pinmap["IO_AK1"],
+                              dev.pinmap["IO_AH4"], dev.pinmap["IO_AJ4"]]),
+        'BA':       PinGroup([dev.pinmap["IO_AD8"], dev.pinmap["IO_AD6"]]),
+        'BG':       PinGroup([dev.pinmap["IO_AG7"], dev.pinmap["IO_AG6"]]),
+        'ODT':      PinGroup([dev.pinmap["IO_AE7"], dev.pinmap["IO_AF4"]]),
+        'CK':       DiffPin(dev.pinmap["IO_AG4"], dev.pinmap["IO_AG5"]),
+        'CKE':      PinGroup([dev.pinmap["IO_AG9"], dev.pinmap["IO_AF8"]]),
+        'CSn':      PinGroup([dev.pinmap["IO_AF9"], dev.pinmap["IO_AE3"]]),
+        'RASn':     dev.pinmap["IO_AD9"],
+        'CASn':     dev.pinmap["IO_AL2"],
+        'WEn':      dev.pinmap["IO_AK2"],
+        'ACTn':     dev.pinmap["IO_AE6"],
+        'ALERTn':   dev.pinmap["IO_AG2"],
+        'PARITY':   dev.pinmap["IO_AE8"],
+        'TEN':      dev.pinmap["IO_AG1"],
+        'RESETn':   dev.pinmap["IO_AF7"],
+    }
+    pins_c = {
+        'DQ':       PinGroup([dev.pinmap["IO_AM1"], dev.pinmap["IO_AN2"], dev.pinmap["IO_AM2"], dev.pinmap["IO_AN1"],
+                              dev.pinmap["IO_AM5"], dev.pinmap["IO_AP2"], dev.pinmap["IO_AL5"], dev.pinmap["IO_AP3"]]),
+        'DQS':      DiffPin(dev.pinmap["IO_AL4"], dev.pinmap["IO_AM4"]),
+        'DM':       dev.pinmap["IO_AN3"],
+        'A':        PinGroup([dev.pinmap["IO_AE5"], dev.pinmap["IO_AF5"], dev.pinmap["IO_AF2"], dev.pinmap["IO_AF3"],
+                              dev.pinmap["IO_AH3"], dev.pinmap["IO_AJ3"], dev.pinmap["IO_AH1"], dev.pinmap["IO_AH2"],
+                              dev.pinmap["IO_AK3"], dev.pinmap["IO_AL3"], dev.pinmap["IO_AJ1"], dev.pinmap["IO_AK1"],
+                              dev.pinmap["IO_AH4"], dev.pinmap["IO_AJ4"]]),
+        'BA':       PinGroup([dev.pinmap["IO_AD8"], dev.pinmap["IO_AD6"]]),
+        'BG':       PinGroup([dev.pinmap["IO_AG7"], dev.pinmap["IO_AG6"]]),
+        'ODT':      PinGroup([dev.pinmap["IO_AE7"], dev.pinmap["IO_AF4"]]),
+        'CK':       DiffPin(dev.pinmap["IO_AG4"], dev.pinmap["IO_AG5"]),
+        'CKE':      PinGroup([dev.pinmap["IO_AG9"], dev.pinmap["IO_AF8"]]),
+        'CSn':      PinGroup([dev.pinmap["IO_AF9"], dev.pinmap["IO_AE3"]]),
+        'RASn':     dev.pinmap["IO_AD9"],
+        'CASn':     dev.pinmap["IO_AL2"],
+        'WEn':      dev.pinmap["IO_AK2"],
+        'ACTn':     dev.pinmap["IO_AE6"],
+        'ALERTn':   dev.pinmap["IO_AG2"],
+        'PARITY':   dev.pinmap["IO_AE8"],
+        'TEN':      dev.pinmap["IO_AG1"],
+        'RESETn':   dev.pinmap["IO_AF7"],
+    }
+    pins_d = {
+        'DQ':       PinGroup([dev.pinmap["IO_AH11"], dev.pinmap["IO_AG12"], dev.pinmap["IO_AG11"], dev.pinmap["IO_AH12"],
+                              dev.pinmap["IO_AJ10"], dev.pinmap["IO_AJ14"], dev.pinmap["IO_AJ11"], dev.pinmap["IO_AJ13"]]),
+        'DQS':      DiffPin(dev.pinmap["IO_AH14"], dev.pinmap["IO_AH13"]),
+        'DM':       dev.pinmap["IO_AK13"],
+        'A':        PinGroup([dev.pinmap["IO_AE5"], dev.pinmap["IO_AF5"], dev.pinmap["IO_AF2"], dev.pinmap["IO_AF3"],
+                              dev.pinmap["IO_AH3"], dev.pinmap["IO_AJ3"], dev.pinmap["IO_AH1"], dev.pinmap["IO_AH2"],
+                              dev.pinmap["IO_AK3"], dev.pinmap["IO_AL3"], dev.pinmap["IO_AJ1"], dev.pinmap["IO_AK1"],
+                              dev.pinmap["IO_AH4"], dev.pinmap["IO_AJ4"]]),
+        'BA':       PinGroup([dev.pinmap["IO_AD8"], dev.pinmap["IO_AD6"]]),
+        'BG':       PinGroup([dev.pinmap["IO_AG7"], dev.pinmap["IO_AG6"]]),
+        'ODT':      PinGroup([dev.pinmap["IO_AE7"], dev.pinmap["IO_AF4"]]),
+        'CK':       DiffPin(dev.pinmap["IO_AG4"], dev.pinmap["IO_AG5"]),
+        'CKE':      PinGroup([dev.pinmap["IO_AG9"], dev.pinmap["IO_AF8"]]),
+        'CSn':      PinGroup([dev.pinmap["IO_AF9"], dev.pinmap["IO_AE3"]]),
+        'RASn':     dev.pinmap["IO_AD9"],
+        'CASn':     dev.pinmap["IO_AL2"],
+        'WEn':      dev.pinmap["IO_AK2"],
+        'ACTn':     dev.pinmap["IO_AE6"],
+        'ALERTn':   dev.pinmap["IO_AG2"],
+        'PARITY':   dev.pinmap["IO_AE8"],
+        'TEN':      dev.pinmap["IO_AG1"],
+        'RESETn':   dev.pinmap["IO_AF7"],
+    }
+
+    ctl.trace("ddr4.vcd", trace_all=True, **pins_a)
+
+    for pins in (pins_a, pins_b, pins_c, pins_d):
+        ddr4 = DDR4(ctl, **pins)
+        await ddr4.init()
+        print("DDR4: Running connectivity test")
+        await ddr4.test()
+        print("DDR4: Done")
 
 async def main():
     drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices([(0x1514, 0x2008)])[0])
@@ -121,6 +232,7 @@ async def main():
             tg.create_task(flash(ctl, dev))
             tg.create_task(mdio(ctl, dev))
             tg.create_task(ddr3(ctl, dev))
+            tg.create_task(ddr4(ctl, dev))
     except KeyboardInterrupt:
         pass
     finally:

@@ -130,6 +130,10 @@ class DiffPin(tuple):
     def __new__(cls, p: Pin, n: Pin):
         return tuple.__new__(cls, (p, n))
 
+    @property
+    def name(self):
+        return self[0].name
+
     def output_enable(self, enable=True):
         self[0].output_enable(enable)
         self[1].output_enable(enable)
@@ -154,6 +158,10 @@ class PinGroup(list):
     """Group of pins to be read/written all at once"""
     def __init__(self, initial):
         list.__init__(self, initial)
+
+    @property
+    def name(self):
+        return self[0].name
 
     def output_enable(self, enable=True):
         for pin in self:

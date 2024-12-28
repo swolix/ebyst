@@ -20,8 +20,9 @@
 import datetime
 
 class Trace:
-    def __init__(self, vcd_file, **pins):
+    def __init__(self, vcd_file, trace_all=False, **pins):
         self.pins = pins
+        self.trace_all = trace_all
         self.t = 0
         self.ids = {}
         self.f = open(vcd_file, "wt")
@@ -30,7 +31,7 @@ class Trace:
         self.f.write(f"$timescale 1ps $end\n")
         self.f.write(f"$scope module TOP $end\n")
         for i, name in enumerate(pins):
-            if isinstance(pins[name], list):
+            if isinstance(pins[name], list) or (isinstance(pins[name], tuple) and trace_all):
                 n = len(pins[name])
             else:
                 n = 1
@@ -44,7 +45,7 @@ class Trace:
     def snapshot(self):
         self.f.write(f"#{self.t}\n")
         for name, pin in self.pins.items():
-            if isinstance(pin, list):
+            if isinstance(pin, list) or (isinstance(pin, tuple) and self.trace_all):
                 s = ""
                 for pin in pin:
                     v = pin.get_value()
