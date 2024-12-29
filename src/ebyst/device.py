@@ -214,6 +214,10 @@ class Device:
                 if cell.function in ("input", "observe_only", "bidir", "clock"):
                     pin.input_cell = cell
 
+    def reset(self):
+        for cell in self.cells:
+            cell.set_safe()
+
     def update_br(self, br):
         if len(br) != len(self.cells): raise ValueError("Invalid br length")
         for i, v in enumerate(br):

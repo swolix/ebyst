@@ -55,6 +55,7 @@ class Opcode(Enum):
     SAMPLE = "SAMPLE"
     PRELOAD = "PRELOAD"
     EXTEST = "EXTEST"
+    EXTEST_PULSE = "EXTEST_PULSE"
 
 class TapController:
     class Chain(list):
@@ -78,6 +79,10 @@ class TapController:
                 except KeyError:
                     raise Exception(f"Instruction {instruction} not supported by all devices in chain")
             return tdi_str
+
+        def reset(self):
+            for dev in self:
+                dev.reset()
 
         def generate_br(self):
             tdi_str = bitarray()
@@ -221,7 +226,11 @@ class TapController:
         self.chain.update_br(br)
         self.load_instruction(Opcode.EXTEST)
         self.in_extest = True
-    
+
+    def extest_pulse(self):
+        self.load_instruction(Opcode.EXTEST_PULSE)
+        self.chain.reset()
+
     async def cycle(self, sample=True):
         """Cycle the boundary scan register when in extest() mode; updates the output pins,
             and samples the input pins

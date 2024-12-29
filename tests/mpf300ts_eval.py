@@ -229,6 +229,17 @@ async def clock(ctl, dev):
             zeroes += 1
     if ones < 40 or zeroes < 40: raise Exception("Clock not ticking")
 
+async def loopback(ctl, o_pin, i_pin):
+    print(f"Loopback {o_pin.name} => {i_pin.name}")
+    i_pin.output_enable(False)
+    o_pin.output_enable(True)
+    for v in (0, 1, 0):
+        o_pin.set_value(v)
+        await ctl.cycle() # drive
+        await ctl.cycle() # sample
+        if i_pin.get_value() != v:
+            raise Exception(f"Loopback {o_pin.name} => {i_pin.name} failed")
+
 async def main():
     drv = ebyst.drivers.MPSSE(ebyst.drivers.MPSSE.list_devices([(0x1514, 0x2008)])[0])
     dev = ebyst.Device.from_bsdl("bsdl/MPF300TSFCG1152.bsdl")
@@ -237,9 +248,9 @@ async def main():
     ctl.detect_chain()
     ctl.add_device(dev)
     ctl.validate_chain()
-    ctl.extest()
 
     try:
+        ctl.extest()
         async with asyncio.TaskGroup() as tg:
             tg.create_task(leds(ctl, dev))
             tg.create_task(flash(ctl, dev))
@@ -247,6 +258,11 @@ async def main():
             tg.create_task(ddr3(ctl, dev))
             tg.create_task(ddr4(ctl, dev))
             tg.create_task(clock(ctl, dev))
+
+        ctl.extest_pulse()
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(loopback(ctl, dev.pinmap['IO_AH33'], dev.pinmap['IO_AG31']))
+            tg.create_task(loopback(ctl, dev.pinmap['IO_AF33'], dev.pinmap['IO_AH29']))
     except KeyboardInterrupt:
         pass
     finally:
