@@ -98,15 +98,21 @@ class Pin:
             return self.control_cell.out_value != self.output_cell.out_dis_ctl
     
     def output_enable(self, enable=True):
-        if self.output_cell is None:
-            raise Exception(f"Pin {self.name} has no output cell")
-        elif self.control_cell is None:
-            if not self.input_cell is None:
-                raise Exception(f"Pin {self.name} has no control cell")
-        else:
-            if enable:
-                self.control_cell.out_value = [1, 0][self.output_cell.out_dis_ctl]
+        if enable:
+            if self.output_cell is None:
+                raise Exception(f"Pin {self.name} has no output cell")
+            elif self.control_cell is None:
+                if not self.input_cell is None:
+                    raise Exception(f"Pin {self.name} has no control cell")
             else:
+                self.control_cell.out_value = [1, 0][self.output_cell.out_dis_ctl]
+        else:
+            if self.input_cell is None:
+                raise Exception(f"Pin {self.name} has no input cell")
+            elif self.control_cell is None:
+                if not self.output_cell is None:
+                    raise Exception(f"Pin {self.name} has no control cell")
+            elif not self.output_cell is None:
                 self.control_cell.out_value = self.output_cell.out_dis_ctl
 
     def set_value(self, value):
@@ -201,11 +207,11 @@ class Device:
                     pin = Pin(cell.port)
                     self.pinmap[cell.port] = pin
 
-                if cell.function == "output3" or cell.function == "bidir":
+                if cell.function in ("output2", "output3", "bidir"):
                     pin.output_cell = cell
                     if not cell.ctl_cell is None:
                         pin.control_cell = self.cells[cell.ctl_cell]
-                if cell.function == "input" or cell.function == "bidir":
+                if cell.function in ("input", "observe_only", "bidir", "clock"):
                     pin.input_cell = cell
 
     def update_br(self, br):
