@@ -81,3 +81,22 @@ Generate .vcd traces for selected pins;
     ctl.trace("mdio.vcd", **pins)
     mdio = MDIO(ctl, **pins)
 ```
+
+# AC coupled nets
+1149.6 is supported to test AC coupled nets;
+
+```python
+# Start test
+ctl.extest_pulse()
+
+# Loopback test (assuming loopback on pins
+dev.pinmap['O'].output_enable(True)
+dev.pinmap['I'].output_enable(False)
+dev.pinmap['O'].set_value(1) # generate a pulse
+await ctl.cycle() # drive output
+print(dev.pinmap['I'].get_value())
+await ctl.cycle() # sample input
+print(dev.pinmap['I'].get_value()) # should be 1
+await ctl.cycle()
+print(dev.pinmap['I'].get_value()) # should be 0
+```
