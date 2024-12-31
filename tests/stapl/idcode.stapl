@@ -1,0 +1,11 @@
+PROCEDURE DO_READ_IDCODE;
+    `BOOLEAN read_data[32];
+    `BOOLEAN i_idcode[10] = #1001101000;
+    `BOOLEAN ones_data[32] = $FFFFFFFF;
+    `INTEGER i;
+    STATE RESET;
+    `IRSCAN 10, i_idcode[9..0];
+    `DRSCAN 32, ones_data[31..0], CAPTURE read_data[31..0];
+    `EXPORT "IDCODE", read_data[31..0];
+ENDPROC;
+CRC 3759;
