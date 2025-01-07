@@ -1,0 +1,20 @@
+NOTE "TEST" "1";
+NOTE "TEST" "2";
+NOTE "TEST" "14";
+NOTE "TEST" "6";
+
+ACTION TEST = DO_TEST;
+
+PROCEDURE DO_TEST;
+    INTEGER i = 1;
+    INTEGER j = 1+1;
+    INTEGER k = 2+3*4;
+    INTEGER l = 2+3/3*4;
+
+    EXPORT "TEST", i;
+    EXPORT "TEST", j;
+    EXPORT "TEST", k;
+    EXPORT "TEST", l;
+ENDPROC;
+
+CRC 0;

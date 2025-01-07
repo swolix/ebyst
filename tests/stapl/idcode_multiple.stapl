@@ -56,4 +56,4 @@ number_of_chips=number_of_chips+1;
 NEXT i;
 ENDPROC;
 `********************************************************
-CRC 0374;
+CRC A3CA;
