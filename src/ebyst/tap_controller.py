@@ -97,7 +97,7 @@ class TapController:
                 dev.update_br(br[o:o+l])
                 o += l
 
-    def __init__(self, driver: Driver, no_parallel=False):
+    def __init__(self, driver: Driver, max_freq=None, no_parallel=False):
         self.driver = driver
         self.driver.set_freq(100e3)
         self.driver.reset()
@@ -108,6 +108,7 @@ class TapController:
         self.cycle_counter = 0
         self.sample = True
         self.traces = []
+        self.max_freq = max_freq
 
     def reset(self):
         self.driver.reset()
@@ -194,7 +195,7 @@ class TapController:
         if irlen != sum(dev.irlen for dev in self.chain):
             raise Exception("Incorrect total ir length ({irlen} detected)")
 
-        max_freq = None
+        max_freq = self.max_freq
         for dev in self.chain:
             if max_freq is None or dev.max_freq < max_freq:
                 max_freq = dev.max_freq
@@ -207,7 +208,7 @@ class TapController:
             idcode = self.read_register(32*drlen)
             for i, dev in enumerate(self.chain):
                 if idcode[len(idcode)-i*32-32:len(idcode)-i*32] != dev.idcode:
-                    raise Exception(f"IDCode doesn't match for device {i}")
+                    raise Exception(f"IDCode doesn't match for device {i} {idcode}<=>{dev.idcode}")
             
             self.load_instruction(Opcode.SAMPLE)
             br = self.read_register(self.chain.brlen)
