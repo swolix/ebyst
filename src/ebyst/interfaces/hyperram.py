@@ -29,6 +29,7 @@ class HyperRAM:
         self.CSn = CSn
         self.RWDS = RWDS
         self.DQ = DQ
+        self.DQ.endian = 'little'
 
     async def init(self):
         self.CK.output_enable(True)
@@ -43,12 +44,12 @@ class HyperRAM:
         self.RESETn.set_value(1)
         await self.ctl.cycle()
 
-    async def read(self, address):
+    async def read(self, address, reg_space=False, length=4):
         try:
             self.DQ.output_enable(True)
             self.CSn.set_value(0)
 
-            ca = [0x80 | ((address >> 27) & 0x1f),
+            ca = [0x80 | (0x40 if reg_space else 0x00) | ((address >> 27) & 0x1f),
                 (address >> 19) & 0xff,
                 (address >> 11) & 0xff,
                 (address >>  3) & 0xff,
@@ -69,7 +70,7 @@ class HyperRAM:
 
             r = []
             rwds_d = rwds_dd = 0
-            for i in range(20*4):
+            for i in range((2*7+length//2)*4+50):
                 self.CK.set_value(1 if i & 2 else 0)
                 await self.ctl.cycle()
 
@@ -77,14 +78,13 @@ class HyperRAM:
                 rwds_dd = rwds_d
                 rwds_d = self.RWDS.get_value()
 
-                if len(r) == 4: break
+                if len(r) == length: break
 
-            if len(r) != 4:
+            if len(r) != length:
                 raise Exception("HyperRAM not responding")
         finally:
             self.CSn.set_value(1)
             await self.ctl.cycle()
-            self.RWDS.output_enable(False)
             self.DQ.output_enable(False)
             self.CK.set_value(0)
             await self.ctl.cycle()
