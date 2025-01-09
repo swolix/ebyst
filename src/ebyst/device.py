@@ -162,8 +162,9 @@ class DiffPin(tuple):
 
 class PinGroup(list):
     """Group of pins to be read/written all at once"""
-    def __init__(self, initial):
+    def __init__(self, initial, endian='little'):
         list.__init__(self, initial)
+        self.endian = endian
 
     @property
     def name(self):
@@ -184,7 +185,7 @@ class PinGroup(list):
                 pin.set_value((value >> i) & 1)
 
     def get_value(self):
-        r = bitarray()
+        r = bitarray(endian=self.endian)
         for pin in self:
             r.append(pin.get_value())
         return r
