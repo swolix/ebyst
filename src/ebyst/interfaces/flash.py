@@ -22,8 +22,8 @@ from bitarray import bitarray
 from ..device import Pin
 from .spi import SPI
 
-class MT25QU01GBBB:
-    def __init__(self, ctl, C: Pin, Sn: Pin, WPn: Pin, DQ0: Pin, DQ1: Pin, RESETn: Pin, HOLDn: Pin):
+class MT25Q:
+    def __init__(self, ctl, C: Pin, Sn: Pin, DQ0: Pin, DQ1: Pin, RESETn: Pin=None, WPn: Pin=None, HOLDn: Pin=None):
         self.ctl = ctl
         self.WPn = WPn
         self.RESETn = RESETn
@@ -31,17 +31,21 @@ class MT25QU01GBBB:
         self.spi = SPI(ctl, SCK=C, SSn=Sn, MOSI=DQ0, MISO=DQ1)
 
     async def init(self):
-        self.WPn.output_enable(True)
-        self.RESETn.output_enable(True)
-        self.HOLDn.output_enable(True)
-        self.WPn.set_value(1)
-        self.RESETn.set_value(0)
-        self.HOLDn.set_value(1)
+        if not self.RESETn is None:
+            self.RESETn.output_enable(True)
+            self.RESETn.set_value(0)
+        if not self.WPn is None:
+            self.WPn.output_enable(True)
+            self.WPn.set_value(1)
+        if not self.HOLDn is None:
+            self.HOLDn.output_enable(True)
+            self.HOLDn.set_value(1)
         await self.ctl.cycle()
         await self.spi.init()
         await self.ctl.cycle()
-        self.RESETn.set_value(1)
-        await self.ctl.cycle()
+        if not self.RESETn is None:
+            self.RESETn.set_value(1)
+            await self.ctl.cycle()
 
     async def read_id(self):
         cmd = bitarray("10011110" + 20 * "00000000")

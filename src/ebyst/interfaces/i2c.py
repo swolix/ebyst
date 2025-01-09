@@ -25,6 +25,8 @@ class I2C:
             Exception.__init__(self, "I2C Nack")
 
     def __init__(self, ctl, SCL: Pin, SDA: Pin, address_bits=8, data_bits=8):
+        if address_bits & 7 != 0: raise ValueError("address_bits must be a multiple of 8")
+        if data_bits & 7 != 0: raise ValueError("address_bits must be a multiple of 8")
         self.ctl = ctl
         self.SCL = SCL
         self.SDA = SDA
@@ -87,7 +89,7 @@ class I2C:
         self.SDA.set_value(1)
         await self.ctl.cycle(sample=False)
 
-    async def write(self, dev_address, reg_address, data):
+    async def write(self, dev_address, reg_address=None, data=0):
         await self._start()
 
         for i in range(7):
@@ -97,39 +99,51 @@ class I2C:
 
         for i in range(self.address_bits):
             await self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
-        if await self._clock_in_bit(): raise I2C.NackError()
+            if (i & 7) == 7:
+                if await self._clock_in_bit(): raise I2C.NackError()
 
-        for i in range(8):
+        for i in range(self.data_bits):
             await self._clock_out_bit((data >> (7-i)) & 1)
-        if await self._clock_in_bit(): raise I2C.NackError()
+            if (i & 7) == 7:
+                if await self._clock_in_bit(): raise I2C.NackError()
 
         await self._stop()
 
-    async def read(self, dev_address, reg_address):
+    async def read(self, dev_address, reg_address=None):
         d = 0
         await self._start()
 
-        for i in range(7):
-            await self._clock_out_bit((dev_address >> (7-i)) & 1)
-        await self._clock_out_bit(0)
-        await self._clock_in_bit()
+        try:
+            if self.address_bits > 0:
+                if reg_address is None: raise ValueError("reg_address cannot be None with >0 address bits")
+                for i in range(7):
+                    await self._clock_out_bit((dev_address >> (7-i)) & 1)
+                await self._clock_out_bit(0)
+                if await self._clock_in_bit(): raise I2C.NackError()
 
-        for i in range(self.address_bits):
-            await self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
-        await self._clock_in_bit()
+                for i in range(self.address_bits):
+                    await self._clock_out_bit((reg_address >> (self.address_bits-1-i)) & 1)
+                    if i & 7 == 7:
+                        if await self._clock_in_bit(): raise I2C.NackError()
 
-        await self._restart()
+                await self._restart()
+            else:
+                if not reg_address is None: raise ValueError("reg_address must be None with 0 address bits")
 
-        for i in range(7):
-            await self._clock_out_bit((dev_address >> (7-i)) & 1)
-        await self._clock_out_bit(1)
-        await self._clock_in_bit()
+            for i in range(7):
+                await self._clock_out_bit((dev_address >> (7-i)) & 1)
+            await self._clock_out_bit(1)
+            if await self._clock_in_bit(): raise I2C.NackError()
 
-        for i in range(8):
-            d <<= 1 
-            d |= await self._clock_in_bit()
-        await self._clock_in_bit()
+            for i in range(self.data_bits):
+                d <<= 1
+                d |= await self._clock_in_bit()
+                if i == self.data_bits-1:
+                    await self._clock_out_bit(1) # final bit; NACK
+                elif i & 7 == 7:
+                    await self._clock_out_bit(0) # ACK
 
-        await self._stop()
+        finally:
+            await self._stop()
 
         return d

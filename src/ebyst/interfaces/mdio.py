@@ -23,16 +23,22 @@ from bitarray.util import int2ba, ba2int
 from ..device import Pin
 
 class MDIO:
-    def __init__(self, ctl, MDC: Pin, MDIO: Pin):
+    def __init__(self, ctl, MDC: Pin, MDIO: Pin, RESETn: Pin=None):
         self.ctl = ctl
         self.MDC = MDC
         self.MDIO = MDIO
+        self.RESETn = RESETn
 
     async def init(self):
         self.MDC.output_enable(True)
         self.MDIO.output_enable(True)
         self.MDC.set_value(1)
         self.MDIO.set_value(1)
+        if not self.RESETn is None:
+            self.RESETn.output_enable(True)
+            self.RESETn.set_value(0)
+            await self.ctl.cycle()
+            self.RESETn.set_value(1)
         await self.ctl.cycle()
 
     async def send_bits(self, bits: bitarray):

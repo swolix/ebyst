@@ -9,7 +9,7 @@ from bitarray.util import int2ba, ba2int
 
 import ebyst
 
-from ebyst.interfaces import MT25QU01GBBB, MDIO, DDR3, DDR4
+from ebyst.interfaces import MT25Q, MDIO, DDR3, DDR4
 from ebyst import Pin, PinGroup, DiffPin
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ async def flash(ctl, dev):
         'DQ1':      dev.pinmap["IO_C18"],
     }
     ctl.trace("flash.vcd", **pins)
-    flash = MT25QU01GBBB(ctl, **pins)
+    flash = MT25Q(ctl, **pins)
 
     await flash.init()
     print("Flash ID:", (await flash.read_id()).hex())
