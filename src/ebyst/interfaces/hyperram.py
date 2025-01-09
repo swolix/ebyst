@@ -44,7 +44,7 @@ class HyperRAM:
         self.RESETn.set_value(1)
         await self.ctl.cycle()
 
-    async def read(self, address, reg_space=False, length=4):
+    async def read(self, address, length=4, reg_space=False):
         try:
             self.DQ.output_enable(True)
             self.CSn.set_value(0)
@@ -91,12 +91,12 @@ class HyperRAM:
 
         return r
 
-    async def write(self, address, data):
+    async def write(self, address, data, reg_space=False):
         try:
             self.DQ.output_enable(True)
             self.CSn.set_value(0)
 
-            ca = [0x00 | ((address >> 27) & 0x1f),
+            ca = [0x00 | (0x40 if reg_space else 0x00) | ((address >> 27) & 0x1f),
                 (address >> 19) & 0xff,
                 (address >> 11) & 0xff,
                 (address >>  3) & 0xff,
@@ -113,7 +113,6 @@ class HyperRAM:
                 self.CK.set_value(0)
                 await self.ctl.cycle()
 
-
             for i in range(2*7-1):
                 await self.ctl.cycle()
                 self.CK.set_value(1)
@@ -123,7 +122,7 @@ class HyperRAM:
                 await self.ctl.cycle()
 
             self.RWDS.output_enable(True)
-            self.RWDS.set_value(1)
+            self.RWDS.set_value(0)
             for i in range(len(data)//2):
                 self.DQ.set_value(data[2*i])
                 await self.ctl.cycle()
