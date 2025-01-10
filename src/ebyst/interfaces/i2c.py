@@ -93,7 +93,7 @@ class I2C:
         await self._start()
 
         for i in range(7):
-            await self._clock_out_bit((dev_address >> (7-i)) & 1)
+            await self._clock_out_bit((dev_address >> (6-i)) & 1)
         await self._clock_out_bit(0)
         if await self._clock_in_bit(): raise I2C.NackError()
 
@@ -117,7 +117,7 @@ class I2C:
             if self.address_bits > 0:
                 if reg_address is None: raise ValueError("reg_address cannot be None with >0 address bits")
                 for i in range(7):
-                    await self._clock_out_bit((dev_address >> (7-i)) & 1)
+                    await self._clock_out_bit((dev_address >> (6-i)) & 1)
                 await self._clock_out_bit(0)
                 if await self._clock_in_bit(): raise I2C.NackError()
 
@@ -131,7 +131,7 @@ class I2C:
                 if not reg_address is None: raise ValueError("reg_address must be None with 0 address bits")
 
             for i in range(7):
-                await self._clock_out_bit((dev_address >> (7-i)) & 1)
+                await self._clock_out_bit((dev_address >> (6-i)) & 1)
             await self._clock_out_bit(1)
             if await self._clock_in_bit(): raise I2C.NackError()
 

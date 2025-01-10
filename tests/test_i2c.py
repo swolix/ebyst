@@ -10,7 +10,7 @@ async def i2c_test(ctl):
     i2c = ebyst.interfaces.I2C(ctl, dev.pinmap['PB9A'], dev.pinmap['PB4B'])
     await i2c.init()
 
-    dev_address = 0xa0
+    dev_address = 0xa0 >> 1
     reg_address = 0x10
     data = 0xa5
     print(f"Writing {dev_address:02x}:{reg_address:02x} <= {data:02x}")
