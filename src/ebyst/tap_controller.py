@@ -106,7 +106,6 @@ class TapController:
         self.in_extest = False
         self.no_parallel = no_parallel
         self.cycle_counter = 0
-        self.sample = True
         self.traces = []
         self.max_freq = max_freq
 
@@ -232,28 +231,21 @@ class TapController:
         self.load_instruction(Opcode.EXTEST_PULSE)
         self.chain.reset()
 
-    async def cycle(self, sample=True):
+    async def cycle(self):
         """Cycle the boundary scan register when in extest() mode; updates the output pins,
             and samples the input pins
-
-            sample: Write and read BR (if only writing; sample can be set to False providing a small speedup)
         """
         # Force a reschedule before cycling BR, this allows all tasks to share a BR cycle.
         # If we are awaken again, and no other task performed the cycle; we execute it.
         cycle_counter = self.cycle_counter
-        self.sample |= sample # OR sample flags from all tasks
         if not self.no_parallel: await asyncio.sleep(0)
         if cycle_counter == self.cycle_counter:
             # nobody else performed the cycle while we where sleeping => we do it
             br = self.chain.generate_br()
-            if self.sample:
-                br = self.read_write_register(br)
-                self.chain.update_br(br)
-            else:
-                self.write_register(br)
+            br = self.read_write_register(br)
+            self.chain.update_br(br)
             for trace in self.traces: trace.snapshot()
             self.cycle_counter += 1
-            self.sample = False
 
     def trace(self, fn, **pins):
         self.traces.append(Trace(fn, **pins))
