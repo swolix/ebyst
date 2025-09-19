@@ -27,16 +27,20 @@ class Checker:
 
     def export(self, key, data):
         if key != "TEST": return
-
-        print(f"CHECK {data} == {self.checks[0]}: ", end='')
-        if self.checks[0] == str(data):
-            print("OK")
-        else:
+        if len(self.checks) == 0:
+            print(f"CHECK {data} == ??: ", end='')
             print("FAIL")
             self.errors += 1
+        else:
+            print(f"CHECK {data} == {self.checks[0]}: ", end='')
+            if self.checks[0] == str(data):
+                print("OK")
+            else:
+                print("FAIL")
+                self.errors += 1
+            self.checks.pop(0)
         self.total += 1
-        self.checks.pop(0)
-    
+
     def done(self):
         return len(self.checks) == 0
 
@@ -54,7 +58,7 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
 
     if len(sys.argv) == 1:
-        for fn in get_all_stapls("stapl/tests"):
+        for fn in sorted(get_all_stapls("stapl/tests")):
             logger.info(f"Parsing {fn}")
             with open(fn, "r") as f:
                 stapl = StaplFile.parse(f)

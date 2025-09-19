@@ -2,6 +2,8 @@ NOTE "TEST" "1";
 NOTE "TEST" "2";
 NOTE "TEST" "14";
 NOTE "TEST" "6";
+NOTE "TEST" "2";
+NOTE "TEST" "-1235";
 
 ACTION TEST = DO_TEST;
 
@@ -10,11 +12,15 @@ PROCEDURE DO_TEST;
     INTEGER j = 1+1;
     INTEGER k = 2+3*4;
     INTEGER l = 2+3/3*4;
+    INTEGER m = 10%8;
+    INTEGER n = ~1234;
 
     EXPORT "TEST", i;
     EXPORT "TEST", j;
     EXPORT "TEST", k;
     EXPORT "TEST", l;
+    EXPORT "TEST", m;
+    EXPORT "TEST", n;
 ENDPROC;
 
 CRC 0;
