@@ -91,13 +91,36 @@ class Int(int, Evaluatable):
 
 class Bool(int, Evaluatable):
     def evaluate(self, scope):
-        return self 
+        return self
 
     def as_bool(self):
         return self
 
     def is_bool(self):
         return True
+
+class String(str, Evaluatable):
+    pass
+
+class Function(Evaluatable):
+    def __init__(self,  _s, _loc, tokens):
+        assert len(tokens) == 1
+        assert len(tokens[0]) == 2
+        self.function = tokens[0][0]
+        self.v = tokens[0][1]
+
+    def evaluate(self, scope={}):
+        if self.function == "BOOL":
+            assert False
+        elif self.function == "INT":
+            assert False
+        elif self.function == "CHR$":
+            return String(chr(self.v.evaluate(scope)))
+        else:
+            assert False
+
+    def __str__(self):
+        return f"{self.function}({self.v})"
 
 class Expression(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -111,12 +134,6 @@ class Expression(Evaluatable):
                 return Int(~self.v[1].evaluate(scope).as_int())
             elif self.v[0] == "!":
                 return Bool(not self.v[1].evaluate(scope).as_bool())
-            # elif self.v[0] == "BOOL":
-                # return self.v[1].evaluate(scope)
-            # elif self.v[0] == "INT":
-                # return self.v[1].evaluate(scope)
-            # elif self.v[0] == "CHR$":
-                # return chr(self.v[1].evaluate(scope))
             else:
                 print(self)
                 assert False
@@ -191,15 +208,16 @@ class Expression(Evaluatable):
 
     @classmethod
     def get_parse_rule(cls):
+        expression = pp.Forward()
         variable = pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")).set_parse_action(Variable)
         literal = (pp.MatchFirst((pp.pyparsing_common.integer,
                                   pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),
                                   pp.Combine(pp.Literal("$") - pp.OneOrMore(pp.Word(pp.srange("[0-9a-fA-F]"))), adjacent=False),
                                   pp.Regex(r"@[^;]*")))).set_parse_action(Literal)
-        function = pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$")
+        function = (pp.Group(pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$") + 
+                             pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
-        expression = pp.Forward()
-        expression0 = (pp.Group(pp.Opt(function) + pp.Literal("(").suppress() + expression + pp.Literal(")").suppress()) | variable | literal).set_parse_action(cls)
+        expression0 = (function | variable | literal).set_parse_action(cls)
         expression1 = (expression0 + pp.Opt(pp.Literal("[") + pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) + pp.Literal("]"))).set_parse_action(cls)
         expression2 = (pp.Opt(pp.one_of("- ! ~")) + expression1).set_parse_action(cls)
         expression3 = (expression2 + pp.ZeroOrMore(pp.one_of("* / %") + expression2)).set_parse_action(cls)

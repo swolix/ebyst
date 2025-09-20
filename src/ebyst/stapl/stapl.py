@@ -20,7 +20,7 @@
 import logging
 import pyparsing as pp
 
-from .expressions import Expression
+from .expressions import Expression, Evaluatable
 
 from pprint import pprint
 
@@ -111,12 +111,20 @@ class ExitInstruction(Instruction):
 class ExportInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
         self.key = tokens[0]
-        self.data = tokens[1]
+        self.parts = tokens[1:]
 
     def execute(self, ctl, scope, stack):
-        data = str(self.data.evaluate(scope))
-        logger.info(f"EXPORT {self.key}: {data}")
-        ctl.export(self.key, data)
+        s = ""
+        for part in self.parts:
+            if isinstance(part, Evaluatable):
+                s += str(part.evaluate(scope))
+            else:
+                s += str(part)
+        logger.info(f"EXPORT {self.key}: {s}")
+        ctl.export(self.key, s)
+
+    def __repr__(self):
+        return f"EXPORT {', '.join(str(s) for s in self.parts)}"
 
 class FrequencyInstruction(Instruction):
     pass
@@ -326,8 +334,8 @@ class StaplFile:
                           pp.Literal(";").suppress()).set_parse_action(DrScanInstruction)
         drstop = (pp.CaselessKeyword("DRSTOP") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(DrStopInstruction)
         exit = (pp.CaselessKeyword("EXIT") - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(ExitInstruction)
-        export = (pp.CaselessKeyword("EXPORT").suppress() - pp.QuotedString("\"") - pp.Suppress(pp.Literal(",")) -
-                          expression - pp.Literal(";").suppress()).set_parse_action(ExportInstruction)
+        export = (pp.CaselessKeyword("EXPORT").suppress() - str_expression -
+                  pp.ZeroOrMore(pp.Suppress(pp.Literal(",")) - str_expression) - pp.Literal(";").suppress()).set_parse_action(ExportInstruction)
         for_ = pp.Forward()
         frequency = (pp.CaselessKeyword("FREQUENCY").suppress() - pp.Opt(expression) - pp.Literal(";").suppress()).set_parse_action(FrequencyInstruction)
         goto = (pp.CaselessKeyword("GOTO") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(GotoInstruction)
