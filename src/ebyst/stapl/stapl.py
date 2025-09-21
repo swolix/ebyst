@@ -55,9 +55,6 @@ class VariableDecl:
         else:
             self.length = None
 
-    def evaluate(self, scope={}):
-        assert False
-
     def __repr__(self):
         if self.length is None:
             return f"<{self.name}>"
@@ -65,7 +62,7 @@ class VariableDecl:
             return f"<{self.name}[{self.length}]>"
 
 class Instruction:
-    def execute(self, ctl, scope, stack):
+    def execute(self, state):
         raise NotImplementedError(f"{type(self)} not implemented")
 
 class LabelledInstruction(Instruction):
@@ -74,18 +71,18 @@ class LabelledInstruction(Instruction):
         self.label = tokens[0][0] if len(tokens[0]) > 0 else None
         self.instruction = tokens[1]
 
-    def execute(self, ctl, scope, stack):
-        return self.instruction.execute(ctl, scope, stack)
+    def execute(self, state):
+        return self.instruction.execute(state)
 
 class Assignment(Instruction):
     def __init__(self,  _s, _loc, tokens):
         self.variable = tokens[0]
         self.value = tokens[1]
 
-    def execute(self, ctl, scope, stack):
-        v = self.value.evaluate(scope)
+    def execute(self, state):
+        v = self.value.evaluate(state.scope)
         logger.debug(f"Setting {self.variable} to {v}...")
-        scope[self.variable] = self.value.evaluate(scope)
+        state.scope[self.variable] = v
 
 class BooleanInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
@@ -95,21 +92,20 @@ class BooleanInstruction(Instruction):
         else:
             self.value = None
 
-    def execute(self, ctl, scope, stack):
+    def execute(self, state):
         if not self.value is None:
-            v = self.value.evaluate(scope)
+            v = self.value.evaluate(state.scope)
             logger.debug(f"Setting {self.decl.name} to {v}...")
-            scope[self.decl.name] = v.as_bool()
+            state.scope[self.decl.name] = v.as_bool()
         else:
-            scope[self.decl.name] = None
+            state.scope[self.decl.name] = None
 
 class CallInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
         self.procedure = tokens[1]
 
-    def execute(self, ctl, scope, stack):
-        print(scope)
-        assert False
+    def execute(self, state):
+        state.procedures[self.procedure].execute(state.new())
 
 class DrScanInstruction(Instruction):
     pass
@@ -125,15 +121,15 @@ class ExportInstruction(Instruction):
         self.key = tokens[0]
         self.parts = tokens[1:]
 
-    def execute(self, ctl, scope, stack):
+    def execute(self, state):
         s = ""
         for part in self.parts:
             if isinstance(part, Evaluatable):
-                s += str(part.evaluate(scope))
+                s += str(part.evaluate(state.scope))
             else:
                 s += str(part)
         logger.info(f"EXPORT {self.key}: {s}")
-        ctl.export(self.key, s)
+        state.ctl.export(self.key, s)
 
     def __repr__(self):
         return f"EXPORT {', '.join(str(s) for s in self.parts)}"
@@ -155,13 +151,13 @@ class IntegerInstruction(Instruction):
         else:
             self.value = None
 
-    def execute(self, ctl, scope, stack):
+    def execute(self, state):
         if not self.value is None:
-            v = self.value.evaluate(scope).as_int()
+            v = self.value.evaluate(state.scope).as_int()
             logger.debug(f"Setting {self.decl.name} to {v}...")
-            scope[self.decl.name] = v
+            state.scope[self.decl.name] = v
         else:
-            scope[self.decl.name] = None
+            state.scope[self.decl.name] = None
 
 class IrScanInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
@@ -170,8 +166,8 @@ class IrScanInstruction(Instruction):
         self.length = tokens[0]
         self.value = tokens[1]
 
-    def execute(self, ctl, scope, stack):
-        logger.debug(f"Loading {self.value.evaluate(scope)} into IR")
+    def execute(self, state):
+        logger.debug(f"Loading {self.value.evaluate(state.scope)} into IR")
 
 class IrStopInstruction(Instruction):
     pass
@@ -183,11 +179,11 @@ class PrintInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
         self.parts = tokens
 
-    def execute(self, ctl, scope, stack):
+    def execute(self, state):
         s = ""
         for part in self.parts:
             if isinstance(part, Expression):
-                s += str(part.evaluate(scope))
+                s += str(part.evaluate(state.scope))
             else:
                 s += str(part)
         print(s)
@@ -204,7 +200,7 @@ class StateInstruction(Instruction):
         if not self.states[-1].upper() in ("RESET", "IDLE", "DRPAUSE", "IRPAUSE"):
             raise Exception("State must end in one of RESET, IDLE, DRPAUSE, IRPAUSE")
 
-    def execute(self, ctl, scope, stack):
+    def execute(self, state):
         for state in self.states:
             logger.debug(f"Entering state {state}...")
         logger.warning(f"Instruction not implemented")
@@ -237,11 +233,9 @@ class Procedure:
     def __repr__(self):
         return f"<Procedure {self.name} ({len(self.statements)} statements)>"
 
-    def execute(self, ctl):
-        scope = {}
-        stack = []
+    def execute(self, state):
         for statement in self.statements:
-            statement.execute(ctl, scope, stack)
+            statement.execute(state)
 
 class Data:
     def __init__(self,  _s, _loc, tokens):
@@ -283,6 +277,16 @@ class Crc:
         else:
             return "<Crc (incorrect)>"
 
+class InterpreterState:
+    def __init__(self, ctl, procedures):
+        self.stack = []
+        self.scope = {}
+        self.ctl = ctl
+        self.procedures = procedures
+
+    def new(self):
+        return InterpreterState(self.ctl, self.procedures)
+
 class StaplFile:
     """STAPL parser"""
 
@@ -314,7 +318,7 @@ class StaplFile:
                 procedure = self.procedures[procedure]
             except KeyError:
                 raise KeyError(f"Procedure {procedure} not found")
-            procedure.execute(ctl)
+            procedure.execute(InterpreterState(ctl, self.procedures))
 
     @classmethod
     def parse(cls, f):
