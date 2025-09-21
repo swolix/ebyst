@@ -144,9 +144,12 @@ class IntegerInstruction(Instruction):
             self.value = None
 
     def execute(self, ctl, scope, stack):
-        v = self.value.evaluate(scope).as_int()
-        logger.debug(f"Setting {self.decl.name} to {v}...")
-        scope[self.decl.name] = v
+        if not self.value is None:
+            v = self.value.evaluate(scope).as_int()
+            logger.debug(f"Setting {self.decl.name} to {v}...")
+            scope[self.decl.name] = v
+        else:
+            scope[self.decl.name] = None
 
 class IrScanInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):

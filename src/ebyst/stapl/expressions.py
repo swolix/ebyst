@@ -68,39 +68,115 @@ class Variable(Evaluatable):
         except KeyError:
             raise KeyError(f"Variable {self.name} not defined")
 
-class Any(int, Evaluatable):
+class Any(Evaluatable):
     """Bool or integer"""
+    def __init__(self, v):
+        self.v = int(v) if not v is None else None
+
     def evaluate(self, scope):
         return self
 
     def as_int(self):
-        return Int(self)
+        return Int(self.v)
 
     def as_bool(self):
-        return Bool(self)
+        return Bool(self.v)
 
-class Int(int, Evaluatable):
+    def __str__(self):
+        return str(self.v)
+
+    def __iadd__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        self.v += other.v
+        return self
+
+    def __imul__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        self.v *= other.v
+        return self
+
+    def __ifloordiv__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        self.v //= other.v
+        return self
+
+    def __imod__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        self.v %= other.v
+        return self
+
+    # def __ior__(self, other):
+        # assert False
+
+    def __int__(self):
+        return self.v
+
+class Int(Any):
     def evaluate(self, scope):
         return self
 
-    def as_int(self):
-        return self
+    def as_bool(self):
+        raise Exception("Can't convert int to bool")
 
     def is_int(self):
         return True
 
-class Bool(int, Evaluatable):
+    def __ge__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        return self.v >= other.v
+
+    def __gt__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        return self.v > other.v
+
+    def __le__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        return self.v <= other.v
+
+    def __lt__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        return self.v < other.v
+
+    def __eq__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        return self.v == other.v
+
+    def __ne__(self, other):
+        if not isinstance(other, Any): raise ValueError()
+        return self.v != other.v
+
+    def __invert__(self):
+        self.v = ~self.v
+        return self
+
+class Bool(Any):
+    def __init__(self, v):
+        if v is None:
+            self.v = None
+        elif int(v) == 0 or int(v) == 1:
+            self.v = int(v)
+        else:
+            raise ValueError(f"Boolean value must be 0 or 1, not {v}")
+
     def evaluate(self, scope):
         return self
 
-    def as_bool(self):
-        return self
+    def as_int(self):
+        raise Exception("Can't convert bool to int")
 
     def is_bool(self):
         return True
 
-class String(str, Evaluatable):
-    pass
+    def __invert__(self):
+        self.v = 0 if self.v else 1
+        return self
+
+class String(Evaluatable):
+    def __init__(self, v):
+        self.v = str(v)
+
+    def __str__(self):
+        return self.v
 
 class Function(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -111,11 +187,11 @@ class Function(Evaluatable):
 
     def evaluate(self, scope={}):
         if self.function == "BOOL":
-            assert False
+            return Bool(int(self.v.evaluate(scope)))
         elif self.function == "INT":
-            assert False
+            return Int(int(self.v.evaluate(scope)))
         elif self.function == "CHR$":
-            return String(chr(self.v.evaluate(scope)))
+            return String(chr(int(self.v.evaluate(scope))))
         else:
             assert False
 
@@ -131,9 +207,9 @@ class Expression(Evaluatable):
             return self.v[0].evaluate(scope)
         elif len(self.v) == 2:
             if self.v[0] == "~":
-                return Int(~self.v[1].evaluate(scope).as_int())
+                return ~Int(self.v[1].evaluate(scope))
             elif self.v[0] == "!":
-                return Bool(not self.v[1].evaluate(scope).as_bool())
+                return ~Bool(self.v[1].evaluate(scope))
             else:
                 print(self)
                 assert False
@@ -142,62 +218,45 @@ class Expression(Evaluatable):
             for i in range(1, len(self.v), 2):
                 b = self.v[i+1].evaluate(scope)
                 if self.v[i] == "*":
-                    r = Int(r.as_int() * b.as_int())
+                    r *= b
                 elif self.v[i] == "/":
-                    r = Int(r.as_int() // b.as_int())
+                    r //= b
                 elif self.v[i] == "%":
-                    r = Int(r.as_int() % b.as_int())
+                    r %= b
                 elif self.v[i] == "+":
-                    r = Int(r.as_int() + b.as_int())
+                    r += b
                 elif self.v[i] == "-":
-                    r = Int(r.as_int() - b.as_int())
+                    r -= b
                 elif self.v[i] == "<<":
-                    r = Int(r.as_int() << b.as_int())
+                    r <<= b
                 elif self.v[i] == ">>":
-                    r = Int(r.as_int() >> b.as_int())
+                    r >>= b
                 elif self.v[i] == "&":
-                    r = Int(r.as_int() & b.as_int())
+                    r &= b
                 elif self.v[i] == "^":
-                    r = Int(r.as_int() ^ b.as_int())
+                    r ^= b
                 elif self.v[i] == "|":
-                    r = Int(r.as_int() | b.as_int())
+                    r |= b
                 elif self.v[i] == "<=":
-                    if r.is_bool() or b.is_bool():
-                        r = Bool(r.as_bool() <= b.as_bool())
-                    else:
-                        r = Bool(r.as_int() <= b.as_int())
+                    r = Bool(r <= b)
                 elif self.v[i] == "<":
-                    if r.is_bool() or b.is_bool():
-                        r = Bool(r.as_bool() < b.as_bool())
-                    else:
-                        r = Bool(r.as_int() < b.as_int())
+                    r = Bool(r < b)
                 elif self.v[i] == ">=":
-                    if r.is_bool() or b.is_bool():
-                        r = Bool(r.as_bool() >= b.as_bool())
-                    else:
-                        r = Bool(r.as_int() >= b.as_int())
+                    r = Bool(r >= b)
                 elif self.v[i] == ">":
-                    if r.is_bool() or b.is_bool():
-                        r = Bool(r.as_bool() > b.as_bool())
-                    else:
-                        r = Bool(r.as_int() > b.as_int())
+                    r = Bool(r > b)
                 elif self.v[i] == "==":
-                    if r.is_bool() or b.is_bool():
-                        r = Bool(r.as_bool() == b.as_bool())
-                    else:
-                        r = Bool(r.as_int() == b.as_int())
+                    r = Bool(r == b)
                 elif self.v[i] == "!=":
-                    if r.is_bool() or b.is_bool():
-                        r = Bool(r.as_bool() != b.as_bool())
-                    else:
-                        r = Bool(r.as_int() != b.as_int())
+                    r = Bool(r != b)
                 elif self.v[i] == "&&":
-                    r = Bool(r.as_bool() and b.as_bool())
+                    r = Bool(int(r) and int(b))
                 elif self.v[i] == "||":
-                    r = Bool(r.as_bool() or b.as_bool())
+                    r = Bool(int(r) or int(b))
                 else:
                     print(self)
                     assert False
+            assert isinstance(r, Any)
             return r
         else:
             print(self)

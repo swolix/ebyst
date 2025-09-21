@@ -14,6 +14,8 @@ PROCEDURE DO_TEST;
     INTEGER l = 2+3/3*4;
     INTEGER m = 10%8;
     INTEGER n = ~1234;
+    INTEGER o;
+    o = 1 + 2 + 3 + 4;
 
     EXPORT "TEST", i;
     EXPORT "TEST", j;
@@ -21,6 +23,7 @@ PROCEDURE DO_TEST;
     EXPORT "TEST", l;
     EXPORT "TEST", m;
     EXPORT "TEST", n;
+    `EXPORT "TEST", o;
 ENDPROC;
 
 CRC 0;
