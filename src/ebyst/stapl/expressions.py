@@ -155,6 +155,10 @@ class Int(Any):
         self.v = ~self.v
         return self
 
+    def __neg__(self):
+        self.v = -self.v
+        return self
+
     def clone(self):
         return Int(self.v)
 
@@ -220,6 +224,8 @@ class Expression(Evaluatable):
         elif len(self.v) == 2:
             if self.v[0] == "~":
                 return ~Int(self.v[1].evaluate(scope))
+            elif self.v[0] == "-":
+                return -Int(self.v[1].evaluate(scope))
             elif self.v[0] == "!":
                 return ~Bool(self.v[1].evaluate(scope))
             else:

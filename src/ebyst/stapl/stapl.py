@@ -20,7 +20,7 @@
 import logging
 import pyparsing as pp
 
-from .expressions import Expression, Evaluatable
+from .expressions import Expression, Evaluatable, Int
 
 from pprint import pprint
 
@@ -221,7 +221,26 @@ class WaitInstruction(Instruction):
 
 class For(Instruction):
     def __init__(self,  _s, _loc, tokens):
-        pass
+        assert tokens[0][0] == tokens[2][1]
+        self.var = tokens[0][0]
+        self.start = tokens[0][1]
+        self.end = tokens[0][2]
+        self.step = tokens[0][3] if len(tokens[0]) == 4 else Int(1)
+        self.statements = tokens[1]
+
+    def execute(self, state):
+        start = self.start.evaluate(state.scope)
+        step = self.step.evaluate(state.scope)
+        end = self.end.evaluate(state.scope)
+        state.scope[self.var] = start
+        while True:
+            for statement in self.statements:
+                statement.execute(state)
+            state.scope[self.var] += step
+            if int(step) > 0 and state.scope[self.var] >= end:
+                break
+            elif int(step) < 0 and state.scope[self.var] <= end:
+                break
 
 class Procedure:
     def __init__(self,  _s, _loc, tokens):
@@ -229,13 +248,6 @@ class Procedure:
         self.enter_label = tokens[0][0][0] if len(tokens[0][0]) > 0 else None
         self.name = tokens[0][1]
         self.statements = tokens[1]
-        for statement in self.statements:
-            if not isinstance(statement, Instruction):
-                print("]]]")
-                print(self.name, type(statement), statement)
-                print("[[[")
-                print()
-            # assert isinstance(statement, Instruction)
         self.exit_label = tokens[2][0][0] if len(tokens[2][0]) > 0 else None
 
     def __repr__(self):
@@ -407,11 +419,11 @@ class StaplFile:
                                        pp.ZeroOrMore(pp.Literal(",").suppress() - identifier))) - pp.Literal(";").suppress()) -
                               pp.Group(pp.ZeroOrMore(proc_statement)) -
                               pp.Group(opt_label - pp.CaselessKeyword("ENDPROC").suppress() - pp.Literal(";").suppress())).set_parse_action(Procedure)
-        for_ <<= pp.Group(pp.Group(pp.CaselessKeyword("FOR") - identifier - pp.Literal("=") -
-                                   expression - pp.CaselessKeyword("TO") - expression -
-                                   pp.Opt(pp.CaselessKeyword("STEP") - expression) - pp.Suppress(pp.Literal(";"))) -
-                          pp.ZeroOrMore(proc_statement) -
-                          pp.Group(opt_label - pp.CaselessKeyword("NEXT") - identifier - pp.Suppress(pp.Literal(";")))).set_parse_action(For)
+        for_ <<= (pp.Group(pp.CaselessKeyword("FOR").suppress() - identifier - pp.Literal("=").suppress() -
+                           expression - pp.CaselessKeyword("TO").suppress() - expression -
+                           pp.Opt(pp.CaselessKeyword("STEP").suppress() - expression) - pp.Suppress(pp.Literal(";"))) -
+                  pp.Group(pp.ZeroOrMore(proc_statement)) -
+                  pp.Group(opt_label - pp.CaselessKeyword("NEXT").suppress() - identifier - pp.Literal(";").suppress())).set_parse_action(For)
 
         stapl_file = (pp.ZeroOrMore(note) + pp.ZeroOrMore(action) + pp.ZeroOrMore(pp.Or((procedure, data))) +
                       crc + pp.StringEnd())
