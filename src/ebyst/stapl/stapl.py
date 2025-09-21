@@ -96,7 +96,7 @@ class BooleanInstruction(Instruction):
             self.value = None
 
     def execute(self, ctl, scope, stack):
-        if not v is None:
+        if not self.value is None:
             v = self.value.evaluate(scope)
             logger.debug(f"Setting {self.decl.name} to {v}...")
             scope[self.decl.name] = v.as_bool()

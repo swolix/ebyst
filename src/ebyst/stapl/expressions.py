@@ -105,11 +105,17 @@ class Any(Evaluatable):
         self.v %= other.v
         return self
 
-    # def __ior__(self, other):
-        # assert False
+    def __str__(self):
+        return str(self.v)
+
+    def __repr__(self):
+        return str(self.v)
 
     def __int__(self):
         return self.v
+
+    def clone(self):
+        return Any(self.v)
 
 class Int(Any):
     def evaluate(self, scope):
@@ -149,6 +155,9 @@ class Int(Any):
         self.v = ~self.v
         return self
 
+    def clone(self):
+        return Int(self.v)
+
 class Bool(Any):
     def __init__(self, v):
         if v is None:
@@ -170,6 +179,9 @@ class Bool(Any):
     def __invert__(self):
         self.v = 0 if self.v else 1
         return self
+
+    def clone(self):
+        return Bool(self.v)
 
 class String(Evaluatable):
     def __init__(self, v):
@@ -214,7 +226,7 @@ class Expression(Evaluatable):
                 print(self)
                 assert False
         elif len(self.v) >= 3 and (len(self.v) & 1) == 1:
-            r = self.v[0].evaluate(scope)
+            r = self.v[0].evaluate(scope).clone()
             for i in range(1, len(self.v), 2):
                 b = self.v[i+1].evaluate(scope)
                 if self.v[i] == "*":
