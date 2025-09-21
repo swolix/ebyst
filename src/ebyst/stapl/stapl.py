@@ -79,10 +79,13 @@ class LabelledInstruction(Instruction):
 
 class Assignment(Instruction):
     def __init__(self,  _s, _loc, tokens):
-        pass
+        self.variable = tokens[0]
+        self.value = tokens[1]
 
     def execute(self, ctl, scope, stack):
-        pass
+        v = self.value.evaluate(scope)
+        logger.debug(f"Setting {self.variable} to {v}...")
+        scope[self.variable] = self.value.evaluate(scope)
 
 class BooleanInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
@@ -93,11 +96,20 @@ class BooleanInstruction(Instruction):
             self.value = None
 
     def execute(self, ctl, scope, stack):
-        logger.debug(f"Setting {self.decl.name} to {self.value.evaluate()}...")
-        scope[self.decl.name] = self.value.evaluate().as_bool()
+        if not v is None:
+            v = self.value.evaluate(scope)
+            logger.debug(f"Setting {self.decl.name} to {v}...")
+            scope[self.decl.name] = v.as_bool()
+        else:
+            scope[self.decl.name] = None
 
 class CallInstruction(Instruction):
-    pass
+    def __init__(self,  _s, _loc, tokens):
+        self.procedure = tokens[1]
+
+    def execute(self, ctl, scope, stack):
+        print(scope)
+        assert False
 
 class DrScanInstruction(Instruction):
     pass
@@ -325,7 +337,7 @@ class StaplFile:
                                        pp.CaselessKeyword("RECOMMENDED") + pp.Tag("opt", "recommended"),
                                        pp.Tag("opt", "required"))))) -
                   pp.Literal(";").suppress()).set_parse_action(Action)
-        assignment = (expression + pp.Literal("=") + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(Assignment)
+        assignment = (identifier + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(Assignment)
         boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl -
                            pp.Opt(pp.Literal("=").suppress() - expression) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
         call = (pp.CaselessKeyword("CALL") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(CallInstruction)

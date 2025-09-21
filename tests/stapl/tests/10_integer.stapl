@@ -4,6 +4,7 @@ NOTE "TEST" "14";
 NOTE "TEST" "6";
 NOTE "TEST" "2";
 NOTE "TEST" "-1235";
+NOTE "TEST" "20";
 
 ACTION TEST = DO_TEST;
 
@@ -16,6 +17,7 @@ PROCEDURE DO_TEST;
     INTEGER n = ~1234;
     INTEGER o;
     o = 1 + 2 + 3 + 4;
+    o = o * 2;
 
     EXPORT "TEST", i;
     EXPORT "TEST", j;
@@ -23,7 +25,7 @@ PROCEDURE DO_TEST;
     EXPORT "TEST", l;
     EXPORT "TEST", m;
     EXPORT "TEST", n;
-    `EXPORT "TEST", o;
+    EXPORT "TEST", o;
 ENDPROC;
 
 CRC 0;
