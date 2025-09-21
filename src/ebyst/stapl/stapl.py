@@ -141,7 +141,15 @@ class GotoInstruction(Instruction):
     pass
 
 class IfInstruction(Instruction):
-    pass
+    def __init__(self,  _s, _loc, tokens):
+        self.condition = tokens[0]
+        self.instruction = tokens[1]
+
+    def execute(self, state):
+        v = self.condition.evaluate(state.scope)
+        assert v.is_bool()
+        if int(v):
+            self.instruction.execute(state)
 
 class IntegerInstruction(Instruction):
     def __init__(self,  _s, _loc, tokens):
@@ -358,7 +366,7 @@ class StaplFile:
         for_ = pp.Forward()
         frequency = (pp.CaselessKeyword("FREQUENCY").suppress() - pp.Opt(expression) - pp.Literal(";").suppress()).set_parse_action(FrequencyInstruction)
         goto = (pp.CaselessKeyword("GOTO") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(GotoInstruction)
-        if_ = (pp.CaselessKeyword("IF") - expression - pp.CaselessKeyword("THEN") - proc_instruction).set_parse_action(IfInstruction)
+        if_ = (pp.CaselessKeyword("IF").suppress() - expression - pp.CaselessKeyword("THEN").suppress() - proc_instruction).set_parse_action(IfInstruction)
         integer = (pp.CaselessKeyword("INTEGER").suppress() - variable_decl -
                            pp.Opt(pp.Literal("=").suppress() - expression - pp.ZeroOrMore(pp.Literal(",").suppress() - expression)) - pp.Literal(";").suppress()).set_parse_action(IntegerInstruction)
         irscan = (pp.CaselessKeyword("IRSCAN").suppress() - expression + pp.Literal(",").suppress() - expression -
