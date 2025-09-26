@@ -246,13 +246,9 @@ class Device:
             m = RE_OPCODE.match(opcode_str)
             if m:
                 opcode = m['opcode'].split(",")
-                if len(opcode) == 1:
-                    ba = bitarray(opcode[0].strip())
-                    ba.reverse()
-                    opcodes[m['instruction'].upper()] = ba
-                else:
-                    # not supported
-                    pass
+                ba = bitarray(opcode[0].strip())
+                ba.reverse()
+                opcodes[m['instruction'].upper()] = ba
                 opcode_str = opcode_str[m.end():]
             else:
                 break
