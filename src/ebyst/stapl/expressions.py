@@ -18,181 +18,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import pyparsing as pp
+from .data import Evaluatable, Literal, Int, Bool, Any, String
 
-class Evaluatable:
-    def evaluate(self, scope={}):
-        raise NotImplementedError()
-
-    def as_int(self):
-        raise NotImplementedError()
-
-    def as_bool(self):
-        raise NotImplementedError()
-
-    def is_int(self):
-        return False
-
-    def is_bool(self):
-        return False
-
-class Literal(Evaluatable):
-    def __init__(self, _s, _loc, tokens):
-        if isinstance(tokens[0], int):
-            self.v = int(tokens[0])
-        elif tokens[0].startswith("#"):
-            self.v = int(tokens[0][1:], 2)
-        elif tokens[0].startswith("$"):
-            self.v = int(tokens[0][1:], 16)
-        elif tokens[0].startswith("@"):
-            self.v = 0 # TODO
+class VariableRef(Evaluatable):
+    def __init__(self,  _s, _loc, tokens):
+        if len(tokens) == 1:
+            self.name = tokens[0]
+            self.slice_start = None
+            self.slice_end = None
+        elif len(tokens) == 2:
+            self.name = tokens[0]
+            self.slice_start = tokens[1]
+            self.slice_end = None
+        elif len(tokens) == 3:
+            self.name = tokens[0]
+            self.slice_start = tokens[1]
+            self.slice_end = tokens[2]
         else:
             assert False
 
     def evaluate(self, scope={}):
-        if self.v == 0 or self.v == 1:
-            return Any(self.v)
-        else:
-            return Int(self.v)
-
-    def __repr__(self):
-        return repr(self.v)
-
-class Variable(Evaluatable):
-    def __init__(self,  _s, _loc, tokens):
-        assert len(tokens) == 1
-        self.name = tokens[0]
-
-    def evaluate(self, scope={}):
         try:
-            return scope[self.name].evaluate(scope)
+            variable = scope[self.name]
         except KeyError:
             raise KeyError(f"Variable {self.name} not defined")
-
-class Any(Evaluatable):
-    """Bool or integer"""
-    def __init__(self, v):
-        self.v = int(v) if not v is None else None
-
-    def evaluate(self, scope):
-        return self
-
-    def as_int(self):
-        return Int(self.v)
-
-    def as_bool(self):
-        return Bool(self.v)
-
-    def __str__(self):
-        return str(self.v)
-
-    def __iadd__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        self.v += other.v
-        return self
-
-    def __imul__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        self.v *= other.v
-        return self
-
-    def __ifloordiv__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        self.v //= other.v
-        return self
-
-    def __imod__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        self.v %= other.v
-        return self
-
-    def __str__(self):
-        return str(self.v)
-
-    def __repr__(self):
-        return str(self.v)
-
-    def __int__(self):
-        return self.v
-
-    def clone(self):
-        return Any(self.v)
-
-class Int(Any):
-    def evaluate(self, scope):
-        return self
-
-    def as_bool(self):
-        raise Exception("Can't convert int to bool")
-
-    def is_int(self):
-        return True
-
-    def __ge__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        return self.v >= other.v
-
-    def __gt__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        return self.v > other.v
-
-    def __le__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        return self.v <= other.v
-
-    def __lt__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        return self.v < other.v
-
-    def __eq__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        return self.v == other.v
-
-    def __ne__(self, other):
-        if not isinstance(other, Any): raise ValueError()
-        return self.v != other.v
-
-    def __invert__(self):
-        self.v = ~self.v
-        return self
-
-    def __neg__(self):
-        self.v = -self.v
-        return self
-
-    def clone(self):
-        return Int(self.v)
-
-class Bool(Any):
-    def __init__(self, v):
-        if v is None:
-            self.v = None
-        elif int(v) == 0 or int(v) == 1:
-            self.v = int(v)
         else:
-            raise ValueError(f"Boolean value must be 0 or 1, not {v}")
-
-    def evaluate(self, scope):
-        return self
-
-    def as_int(self):
-        raise Exception("Can't convert bool to int")
-
-    def is_bool(self):
-        return True
-
-    def __invert__(self):
-        self.v = 0 if self.v else 1
-        return self
-
-    def clone(self):
-        return Bool(self.v)
-
-class String(Evaluatable):
-    def __init__(self, v):
-        self.v = str(v)
+            if not self.slice_end is None:
+                assert False
+            elif not self.slice_start is None:
+                return variable[int(self.slice_start.evaluate(scope))].evaluate(scope)
+            else:
+                return variable.evaluate(scope)
 
     def __str__(self):
-        return self.v
+        return self.name
+
+class LiteralParser(Literal):
+    def __init__(self, _s, _loc, tokens):
+        Literal.__init__(self, tokens[0])
 
 class Function(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -207,7 +70,7 @@ class Function(Evaluatable):
         elif self.function == "INT":
             return Int(int(self.v.evaluate(scope)))
         elif self.function == "CHR$":
-            return String(chr(int(self.v.evaluate(scope))))
+            return String(chr(Int(self.v.evaluate(scope)).v))
         else:
             assert False
 
@@ -256,28 +119,33 @@ class Expression(Evaluatable):
                 elif self.v[i] == "|":
                     r |= b
                 elif self.v[i] == "<=":
-                    r = Bool(r <= b)
+                    r = r <= b
                 elif self.v[i] == "<":
-                    r = Bool(r < b)
+                    r = r < b
                 elif self.v[i] == ">=":
-                    r = Bool(r >= b)
+                    r = r >= b
                 elif self.v[i] == ">":
-                    r = Bool(r > b)
+                    r = r > b
                 elif self.v[i] == "==":
-                    r = Bool(r == b)
+                    r = r == b
                 elif self.v[i] == "!=":
-                    r = Bool(r != b)
+                    r = r != b
                 elif self.v[i] == "&&":
-                    r = Bool(int(r) and int(b))
+                    r = Bool(r)
+                    r &= b
                 elif self.v[i] == "||":
-                    r = Bool(int(r) or int(b))
+                    print("AAA", r, b)
+                    r = Bool(r)
+                    print("BBB", r, b)
+                    r |= b
+                    print("CCC", r, b)
                 else:
                     print(self)
                     assert False
-            assert isinstance(r, Any)
+            assert isinstance(r, Bool) or isinstance(r, Int) or isinstance(r, Any)
             return r
         else:
-            print(self)
+            print(self.v)
             assert False
 
     def __repr__(self):
@@ -286,16 +154,20 @@ class Expression(Evaluatable):
     @classmethod
     def get_parse_rule(cls):
         expression = pp.Forward()
-        variable = pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")).set_parse_action(Variable)
+        variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
+                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) + 
+                           pp.Literal("]").suppress())).set_parse_action(VariableRef)
         literal = (pp.MatchFirst((pp.pyparsing_common.integer,
                                   pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),
                                   pp.Combine(pp.Literal("$") - pp.OneOrMore(pp.Word(pp.srange("[0-9a-fA-F]"))), adjacent=False),
-                                  pp.Regex(r"@[^;]*")))).set_parse_action(Literal)
+                                  pp.Regex(r"@[^;]*")))).set_parse_action(LiteralParser)
         function = (pp.Group(pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$") + 
                              pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
-        expression0 = (function | variable | literal).set_parse_action(cls)
-        expression1 = (expression0 + pp.Opt(pp.Literal("[") + pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) + pp.Literal("]"))).set_parse_action(cls)
+        expression1 = (function | variable | literal).set_parse_action(cls)
+        # expression1 = (expression0 + pp.Opt(pp.Literal("[").suppress() + 
+                                            # pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) + 
+                                            # pp.Literal("]").suppress())).set_parse_action(SliceExpression)
         expression2 = (pp.Opt(pp.one_of("- ! ~")) + expression1).set_parse_action(cls)
         expression3 = (expression2 + pp.ZeroOrMore(pp.one_of("* / %") + expression2)).set_parse_action(cls)
         expression4 = (expression3 + pp.ZeroOrMore(pp.one_of("+ -") + expression3)).set_parse_action(cls)

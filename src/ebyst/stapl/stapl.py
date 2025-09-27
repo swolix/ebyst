@@ -20,7 +20,8 @@
 import logging
 import pyparsing as pp
 
-from .expressions import Expression, Evaluatable, Int
+from .expressions import Expression
+from .data import IntegerVariable, IntegerArray, BoolVariable, BoolArray, Evaluatable, Int, Bool, VariableScope
 
 from pprint import pprint
 
@@ -62,11 +63,15 @@ class VariableDecl:
             return f"<{self.name}[{self.length}]>"
 
 class Instruction:
+    def __init__(self,  s, loc, tokens):
+        self.loc = loc
+
     def execute(self, state):
         raise NotImplementedError(f"{type(self)} not implemented")
 
 class LabelledInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 2
         self.label = tokens[0][0] if len(tokens[0]) > 0 else None
         self.instruction = tokens[1]
@@ -75,33 +80,35 @@ class LabelledInstruction(Instruction):
         return self.instruction.execute(state)
 
 class Assignment(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.variable = tokens[0]
         self.value = tokens[1]
 
     def execute(self, state):
         v = self.value.evaluate(state.scope)
         logger.debug(f"Setting {self.variable} to {v}...")
-        state.scope[self.variable] = v
+        state.scope[self.variable].assign(v)
 
 class BooleanInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
-        self.decl = tokens[0]
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        self.name = tokens[0].name
         if len(tokens) == 2:
             self.value = tokens[1]
         else:
             self.value = None
 
     def execute(self, state):
+        state.scope[self.name] = var = BoolVariable()
         if not self.value is None:
             v = self.value.evaluate(state.scope)
-            logger.debug(f"Setting {self.decl.name} to {v}...")
-            state.scope[self.decl.name] = v.as_bool()
-        else:
-            state.scope[self.decl.name] = None
+            logger.debug(f"Setting {self.name} to {v}...")
+            var.assign(v)
 
 class CallInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.procedure = tokens[1]
 
     def execute(self, state):
@@ -117,7 +124,8 @@ class ExitInstruction(Instruction):
     pass
 
 class ExportInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.key = tokens[0]
         self.parts = tokens[1:]
 
@@ -141,36 +149,36 @@ class GotoInstruction(Instruction):
     pass
 
 class IfInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.condition = tokens[0]
         self.instruction = tokens[1]
 
     def execute(self, state):
         v = self.condition.evaluate(state.scope)
-        assert v.is_bool()
-        if int(v):
+        if Bool(v):
             self.instruction.execute(state)
 
 class IntegerInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
-        self.decl = tokens[0]
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        self.name = tokens[0].name
         if len(tokens) == 2:
             self.value = tokens[1]
         else:
             self.value = None
 
     def execute(self, state):
+        state.scope[self.name] = var = IntegerVariable()
+
         if not self.value is None:
-            v = self.value.evaluate(state.scope).as_int()
-            logger.debug(f"Setting {self.decl.name} to {v}...")
-            state.scope[self.decl.name] = v
-        else:
-            state.scope[self.decl.name] = None
+            v = self.value.evaluate(state.scope)
+            logger.debug(f"Setting {self.name} to {v}...")
+            var.assign(v)
 
 class IrScanInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
-        # print(tokens)
-        # assert len(tokens) == 2
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.length = tokens[0]
         self.value = tokens[1]
 
@@ -184,7 +192,8 @@ class PopInstruction(Instruction):
     pass
 
 class PrintInstruction(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.parts = tokens
 
     def execute(self, state):
@@ -203,7 +212,8 @@ class PushInstruction(Instruction):
     pass
 
 class StateInstruction(Instruction):
-    def __init__(self, _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         self.states = tokens
         if not self.states[-1].upper() in ("RESET", "IDLE", "DRPAUSE", "IRPAUSE"):
             raise Exception("State must end in one of RESET, IDLE, DRPAUSE, IRPAUSE")
@@ -220,7 +230,8 @@ class WaitInstruction(Instruction):
     pass
 
 class For(Instruction):
-    def __init__(self,  _s, _loc, tokens):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
         assert tokens[0][0] == tokens[2][1]
         self.var = tokens[0][0]
         self.start = tokens[0][1]
@@ -232,14 +243,15 @@ class For(Instruction):
         start = self.start.evaluate(state.scope)
         step = self.step.evaluate(state.scope)
         end = self.end.evaluate(state.scope)
-        state.scope[self.var] = start
+        state.scope[self.var] = var = IntegerVariable()
+        var.assign(start)
         while True:
             for statement in self.statements:
                 statement.execute(state)
-            state.scope[self.var] += step
-            if int(step) > 0 and state.scope[self.var] >= end:
+            var += step
+            if Int(step) > 0 and var >= end:
                 break
-            elif int(step) < 0 and state.scope[self.var] <= end:
+            elif Int(step) < 0 and var <= end:
                 break
 
 class Procedure:
@@ -300,7 +312,7 @@ class Crc:
 class InterpreterState:
     def __init__(self, ctl, procedures):
         self.stack = []
-        self.scope = {}
+        self.scope = VariableScope()
         self.ctl = ctl
         self.procedures = procedures
 
