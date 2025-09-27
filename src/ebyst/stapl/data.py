@@ -229,6 +229,26 @@ class String(Evaluatable):
     def __repr__(self):
         return f"String({self.v})"
 
+class Slice:
+    def __init__(self, array, first, last):
+        self.array = array
+        self.first = first
+        self.last = last
+
+    def __len__(self):
+        return self.last - self.first + 1 if self.last > self.first else self.first - self.last + 1
+
+    def __iter__(self):
+        if self.first > self.last:
+            for i in range(self.first, self.last-1, -1):
+                yield self.array[i]
+        else:
+            for i in range(self.first, self.last+1):
+                yield self.array[i]
+
+    def __repr__(self):
+        return f"Slice({len(self)})"
+
 class IntegerVariable(Int, Variable):
     def __init__(self):
         self.v = None
@@ -244,7 +264,17 @@ class IntegerArrayVariable(list, Variable, Evaluatable):
     def __init__(self, length):
         for i in range(length): self.append(IntegerVariable())
 
-class BoolVariable(Evaluatable, Variable):
+    def assign(self, index, v):
+        if isinstance(v, Slice):
+            for i, v in enumerate(v):
+                self[int(index+i)].assign(v)
+        else:
+            self[int(index)].assign(v)
+
+    def slice(self, first, last):
+        return Slice(self, first, last)
+
+class BoolVariable(Bool, Variable):
     def __init__(self):
         self.v = None
     
@@ -262,3 +292,13 @@ class BoolVariable(Evaluatable, Variable):
 class BoolArrayVariable(list, Variable, Evaluatable):
     def __init__(self, length):
         for i in range(length): self.append(BoolVariable())
+
+    def assign(self, index, v):
+        if isinstance(v, Slice):
+            for i, v in enumerate(v):
+                self[int(index+i)].assign(v)
+        else:
+            self[int(index)].assign(v)
+
+    def slice(self, first, last):
+        return Slice(self, first, last)

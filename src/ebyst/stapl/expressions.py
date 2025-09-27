@@ -35,6 +35,7 @@ class VariableRef(Evaluatable):
             self.slice_start = tokens[1]
             self.slice_end = tokens[2]
         else:
+            print(tokens)
             assert False
 
     def evaluate(self, scope=VariableScope()):
@@ -44,7 +45,7 @@ class VariableRef(Evaluatable):
             raise KeyError(f"Variable {self.name} not defined")
         else:
             if not self.slice_end is None:
-                assert False
+                return variable.slice(int(self.slice_start.evaluate(scope)), int(self.slice_end.evaluate(scope)))
             elif not self.slice_start is None:
                 return variable[int(self.slice_start.evaluate(scope))].evaluate(scope)
             else:
@@ -76,20 +77,6 @@ class Function(Evaluatable):
 
     def __str__(self):
         return f"{self.function}({self.v})"
-
-class SliceExpression(Evaluatable):
-    def __init__(self,  _s, _loc, tokens):
-        self.v = tokens
-
-    def evaluate(self, scope=VariableScope()):
-        if len(self.v) == 1:
-            return self.v[0].evaluate(scope)
-        else:
-            print(self.v)
-            assert False
-
-    def __repr__(self):
-        return "(" + "".join([str(v) for v in self.v]) + ")"
 
 class Expression(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -166,7 +153,7 @@ class Expression(Evaluatable):
     def get_parse_rule(cls):
         expression = pp.Forward()
         variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
-                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) +
+                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
                            pp.Literal("]").suppress())).set_parse_action(VariableRef)
         literal = (pp.MatchFirst((pp.pyparsing_common.integer,
                                   pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),

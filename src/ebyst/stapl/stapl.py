@@ -82,13 +82,42 @@ class LabelledInstruction(Instruction):
 class Assignment(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
-        self.variable = tokens[0]
-        self.value = tokens[1]
+        if len(tokens) == 2:
+            self.variable = tokens[0]
+            self.first = None
+            self.last = None
+            self.value = tokens[1]
+        elif len(tokens) == 3:
+            self.variable = tokens[0]
+            self.first = tokens[1]
+            self.last = None
+            self.value = tokens[2]
+        elif len(tokens) == 4:
+            self.variable = tokens[0]
+            self.first = tokens[1]
+            self.last = tokens[2]
+            self.value = tokens[3]
+        else:
+            print(tokens)
+            assert False
 
     def execute(self, state):
         v = self.value.evaluate(state.scope)
-        logger.debug(f"Setting {self.variable} to {v}...")
-        state.scope[self.variable].assign(v)
+        if not self.last is None:
+            first = self.first.evaluate()
+            last = self.last.evaluate()
+            length = last - first + 1 if last > first else first - last + 1
+            if last - first + 1 != len(v):
+                raise ValueError(f"Can't assign slice of length {len(v)} to slice of length {length}")
+            logger.debug(f"Setting {self.variable}[{first}] to {v}...")
+            state.scope[self.variable].assign(first, v)
+        elif not self.first is None:
+            first = self.first.evaluate()
+            logger.debug(f"Setting {self.variable}[{first}] to {v}...")
+            state.scope[self.variable].assign(first, v)
+        else:
+            logger.debug(f"Setting {self.variable} to {v}...")
+            state.scope[self.variable].assign(v)
 
 class BooleanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -410,7 +439,10 @@ class StaplFile:
                                        pp.CaselessKeyword("RECOMMENDED") + pp.Tag("opt", "recommended"),
                                        pp.Tag("opt", "required"))))) -
                   pp.Literal(";").suppress()).set_parse_action(Action)
-        assignment = (identifier + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(Assignment)
+        variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
+                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
+                           pp.Literal("]").suppress()))
+        assignment = (variable + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(Assignment)
         boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl -
                            pp.Opt(pp.Literal("=").suppress() - expression - pp.ZeroOrMore(pp.Literal(",").suppress() - expression)) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
         call = (pp.CaselessKeyword("CALL") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(CallInstruction)
