@@ -21,7 +21,7 @@ import logging
 import pyparsing as pp
 
 from .expressions import Expression
-from .data import IntegerVariable, IntegerArray, BoolVariable, BoolArray, Evaluatable, Int, Bool, VariableScope
+from .data import IntegerVariable, IntegerArrayVariable, BoolVariable, BoolArrayVariable, Evaluatable, Int, Bool, VariableScope
 
 from pprint import pprint
 
@@ -94,17 +94,36 @@ class BooleanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         self.name = tokens[0].name
-        if len(tokens) == 2:
-            self.value = tokens[1]
+        self.length = None if tokens[0].length is None else int(tokens[0].length.evaluate())
+
+        if not self.length is None:
+            self.value = [None] * self.length
+            if len(tokens) > 1:
+                assert self.length == len(tokens) - 1
+                for i in range(self.length):
+                    self.value[i] = tokens[i+1]
         else:
             self.value = None
+            if len(tokens) > 1:
+                assert 1 == len(tokens) - 1
+                self.value = tokens[1]
 
     def execute(self, state):
-        state.scope[self.name] = var = BoolVariable()
-        if not self.value is None:
-            v = self.value.evaluate(state.scope)
-            logger.debug(f"Setting {self.name} to {v}...")
-            var.assign(v)
+        if self.length is None:
+            state.scope[self.name] = var = BoolVariable()
+
+            if not self.value is None:
+                v2 = self.value.evaluate(state.scope)
+                logger.debug(f"Setting {self.name} to {v2}...")
+                var.assign(v2)
+        else:
+            state.scope[self.name] = var = BoolArrayVariable(self.length)
+ 
+            if not self.value is None:
+                for i in range(self.length):
+                    v = self.value[i].evaluate(state.scope)
+                    logger.debug(f"Setting {self.name}[{i}] to {v}...")
+                    var[i].assign(v)
 
 class CallInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -163,18 +182,36 @@ class IntegerInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         self.name = tokens[0].name
-        if len(tokens) == 2:
-            self.value = tokens[1]
+        self.length = None if tokens[0].length is None else int(tokens[0].length.evaluate())
+
+        if not self.length is None:
+            self.value = [None] * self.length
+            if len(tokens) > 1:
+                assert self.length == len(tokens) - 1
+                for i in range(self.length):
+                    self.value[i] = tokens[i+1]
         else:
             self.value = None
+            if len(tokens) > 1:
+                assert 1 == len(tokens) - 1
+                self.value = tokens[1]
 
     def execute(self, state):
-        state.scope[self.name] = var = IntegerVariable()
+        if self.length is None:
+            state.scope[self.name] = var = IntegerVariable()
 
-        if not self.value is None:
-            v = self.value.evaluate(state.scope)
-            logger.debug(f"Setting {self.name} to {v}...")
-            var.assign(v)
+            if not self.value is None:
+                v2 = self.value.evaluate(state.scope)
+                logger.debug(f"Setting {self.name} to {v2}...")
+                var.assign(v2)
+        else:
+            state.scope[self.name] = var = IntegerArrayVariable(self.length)
+            
+            if not self.value is None:
+                for i in range(self.length):
+                    v = self.value[i].evaluate(state.scope)
+                    logger.debug(f"Setting {self.name}[{i}] to {v}...")
+                    var[i].assign(v)
 
 class IrScanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -375,7 +412,7 @@ class StaplFile:
                   pp.Literal(";").suppress()).set_parse_action(Action)
         assignment = (identifier + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(Assignment)
         boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl -
-                           pp.Opt(pp.Literal("=").suppress() - expression) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
+                           pp.Opt(pp.Literal("=").suppress() - expression - pp.ZeroOrMore(pp.Literal(",").suppress() - expression)) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
         call = (pp.CaselessKeyword("CALL") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(CallInstruction)
         crc = (pp.CaselessKeyword("CRC").suppress() - pp.Word(pp.srange("[0-9a-fA-F]")) - pp.Literal(";").suppress()).set_parse_action(Crc)
         drscan = (pp.CaselessKeyword("DRSCAN").suppress() - expression - pp.Literal(",").suppress() - expression -

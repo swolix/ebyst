@@ -1,9 +1,16 @@
 NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
 
 ACTION TEST = DO_TEST;
 
 PROCEDURE DO_TEST;
-    EXPORT "TEST", 1;
+    BOOLEAN array[4] = 1, 0, 1, 1;
+    EXPORT "TEST", array[3];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[0];
+    EXPORT "TEST", array[1];
 ENDPROC;
 
 CRC 0;

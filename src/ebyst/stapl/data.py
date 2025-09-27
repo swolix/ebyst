@@ -121,6 +121,9 @@ class Int(Evaluatable):
     def __str__(self):
         return str(self.v)
 
+    def __int__(self):
+        return self.v
+
     def __repr__(self):
         return f"Int({self.v})"
 
@@ -237,7 +240,7 @@ class IntegerVariable(Int, Variable):
         self.v += Int(other).v
         return self
 
-class IntegerArray(list, Evaluatable):
+class IntegerArrayVariable(list, Variable, Evaluatable):
     def __init__(self, length):
         for i in range(length): self.append(IntegerVariable())
 
@@ -256,6 +259,6 @@ class BoolVariable(Evaluatable, Variable):
     def evaluate(self, scope=VariableScope()):
         return self.v
 
-class BoolArray(list):
+class BoolArrayVariable(list, Variable, Evaluatable):
     def __init__(self, length):
         for i in range(length): self.append(BoolVariable())

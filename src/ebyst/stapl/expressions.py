@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import pyparsing as pp
-from .data import Evaluatable, Literal, Int, Bool, Any, String
+from .data import Evaluatable, Literal, Int, Bool, Any, String, VariableScope
 
 class VariableRef(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -37,7 +37,7 @@ class VariableRef(Evaluatable):
         else:
             assert False
 
-    def evaluate(self, scope={}):
+    def evaluate(self, scope=VariableScope()):
         try:
             variable = scope[self.name]
         except KeyError:
@@ -77,11 +77,25 @@ class Function(Evaluatable):
     def __str__(self):
         return f"{self.function}({self.v})"
 
+class SliceExpression(Evaluatable):
+    def __init__(self,  _s, _loc, tokens):
+        self.v = tokens
+
+    def evaluate(self, scope=VariableScope()):
+        if len(self.v) == 1:
+            return self.v[0].evaluate(scope)
+        else:
+            print(self.v)
+            assert False
+
+    def __repr__(self):
+        return "(" + "".join([str(v) for v in self.v]) + ")"
+
 class Expression(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
         self.v = tokens
 
-    def evaluate(self, scope={}):
+    def evaluate(self, scope=VariableScope()):
         if len(self.v) == 1:
             return self.v[0].evaluate(scope)
         elif len(self.v) == 2:
@@ -134,11 +148,8 @@ class Expression(Evaluatable):
                     r = Bool(r)
                     r &= b
                 elif self.v[i] == "||":
-                    print("AAA", r, b)
                     r = Bool(r)
-                    print("BBB", r, b)
                     r |= b
-                    print("CCC", r, b)
                 else:
                     print(self)
                     assert False
@@ -155,7 +166,7 @@ class Expression(Evaluatable):
     def get_parse_rule(cls):
         expression = pp.Forward()
         variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
-                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) + 
+                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) +
                            pp.Literal("]").suppress())).set_parse_action(VariableRef)
         literal = (pp.MatchFirst((pp.pyparsing_common.integer,
                                   pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),
@@ -165,9 +176,6 @@ class Expression(Evaluatable):
                              pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
         expression1 = (function | variable | literal).set_parse_action(cls)
-        # expression1 = (expression0 + pp.Opt(pp.Literal("[").suppress() + 
-                                            # pp.Opt(expression + pp.Opt(pp.Literal("..") + expression)) + 
-                                            # pp.Literal("]").suppress())).set_parse_action(SliceExpression)
         expression2 = (pp.Opt(pp.one_of("- ! ~")) + expression1).set_parse_action(cls)
         expression3 = (expression2 + pp.ZeroOrMore(pp.one_of("* / %") + expression2)).set_parse_action(cls)
         expression4 = (expression3 + pp.ZeroOrMore(pp.one_of("+ -") + expression3)).set_parse_action(cls)

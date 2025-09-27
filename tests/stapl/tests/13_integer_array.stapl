@@ -1,9 +1,16 @@
+NOTE "TEST" "8";
+NOTE "TEST" "4";
 NOTE "TEST" "1";
+NOTE "TEST" "2";
 
 ACTION TEST = DO_TEST;
 
 PROCEDURE DO_TEST;
-    EXPORT "TEST", 1;
+    INTEGER array[4] = 1, 2, 4, 8;
+    EXPORT "TEST", array[3];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[0];
+    EXPORT "TEST", array[1];
 ENDPROC;
 
 CRC 0;
