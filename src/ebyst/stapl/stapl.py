@@ -27,6 +27,10 @@ from pprint import pprint
 
 logger = logging.getLogger(__name__)
 
+class ExitCode(Exception):
+    def __init__(self, code=0):
+        self.code = code
+
 class Note:
     def __init__(self,  _s, _loc, tokens):
         assert len(tokens) == 2
@@ -169,7 +173,12 @@ class DrStopInstruction(Instruction):
     pass
 
 class ExitInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        self.exit_code = tokens[0]
+
+    def execute(self, interpreter):
+        raise ExitCode(self.exit_code.evaluate(interpreter.scope))
 
 class ExportInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -492,7 +501,7 @@ class StaplFile:
                                  pp.Literal(",").suppress() - expression + pp.Literal(",").suppress() - expression) -
                           pp.Literal(";").suppress()).set_parse_action(DrScanInstruction)
         drstop = (pp.CaselessKeyword("DRSTOP") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(DrStopInstruction)
-        exit = (pp.CaselessKeyword("EXIT") - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(ExitInstruction)
+        exit = (pp.CaselessKeyword("EXIT").suppress() - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(ExitInstruction)
         export = (pp.CaselessKeyword("EXPORT").suppress() - str_expression -
                   pp.ZeroOrMore(pp.Suppress(pp.Literal(",")) - str_expression) - pp.Literal(";").suppress()).set_parse_action(ExportInstruction)
         for_ = pp.Forward()

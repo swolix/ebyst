@@ -2,7 +2,7 @@
 import os, sys
 import logging
 
-from ebyst.stapl import StaplFile
+from ebyst.stapl import StaplFile, ExitCode
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +19,12 @@ def get_all_stapls(root):
 class Checker:
     def __init__(self, stapl):
         self.checks = []
+        self.exit_code = None
         for note in stapl.notes:
             if note.key == "TEST":
                 self.checks.append(str(note.text))
+            elif note.key == "EXIT":
+                self.exit_code = int(note.text)
         self.total = 0
         self.errors = 0
 
@@ -47,11 +50,19 @@ class Checker:
 def test_action(stapl_file, action):
     logger.info(f"Running {action}")
     chk = Checker(stapl)
-    stapl.execute(chk, action)
-    assert chk.done()
-    assert chk.total > 0
-    assert chk.errors == 0
-
+    exit_code = None
+    try:
+        stapl.execute(chk, action)
+    except ExitCode as e:
+        exit_code = e.code
+    if not chk.done():
+        raise Exception(f"EXPORT TEST output count doesn't match NOTE TEST output count")
+    if chk.exit_code != exit_code:
+        raise Exception(f"EXIT code doesn't match NOTE EXIT output")
+    if chk.total == 0:
+        raise Exception(f"No checks found")
+    if chk.errors > 0:
+        raise Exception(f"One or more checks failed")
 
 if __name__ == "__main__":
     logging.basicConfig()
