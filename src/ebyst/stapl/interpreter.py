@@ -39,6 +39,7 @@ class StaplInterpreter:
         self.loop_stack = None
         self.scope = None
         self.pc = None
+        self.procedure = None
 
     def execute(self, instruction=None):
         assert not self.scope is None
@@ -84,7 +85,8 @@ class StaplInterpreter:
                         logger.debug(f"Setting {instruction.name}[{i}] to {v}...")
                         var[i].assign(v)
         elif isinstance(instruction, CallInstruction):
-            self.call_stack.append((self.pc, self.scope, self.loop_stack))
+            self.call_stack.append((self.procedure, self.pc, self.scope, self.loop_stack))
+            self.procedure = instruction.procedure
             self.pc = self.stapl.procedures[instruction.procedure]
             self.scope = VariableScope()
             self.loop_stack = []
@@ -94,7 +96,7 @@ class StaplInterpreter:
             return False
         elif isinstance(instruction, EndProcedureInstruction):
             if len(self.call_stack) > 0:
-                self.pc, self.scope, self.loop_stack = self.call_stack.pop()
+                self.procedure, self.pc, self.scope, self.loop_stack = self.call_stack.pop()
             else:
                 return False
         elif isinstance(instruction, ExitInstruction):
@@ -115,6 +117,11 @@ class StaplInterpreter:
             self.loop_stack.append((instruction.var, step, end, self.pc))
             self.scope[instruction.var] = var = IntegerVariable()
             var.assign(start)
+        elif isinstance(instruction, GotoInstruction):
+            try:
+                self.pc = self.stapl.labels[self.procedure][instruction.label]
+            except KeyError:
+                raise Exception(f"Label {instruction.label} not found")
         elif isinstance(instruction, IfInstruction):
             v = instruction.condition.evaluate(self.scope)
             if Bool(v):
@@ -194,6 +201,7 @@ class StaplInterpreter:
             raise KeyError(f"Action {action} not found")
         for procedure, opt in action.procedures:
             try:
+                self.procedure = procedure
                 self._run_procedure(self.stapl.procedures[procedure])
             except KeyError:
                 raise KeyError(f"Procedure {procedure} not found")

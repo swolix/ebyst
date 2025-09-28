@@ -287,20 +287,33 @@ class StaplFile:
         self.labels = {}
         self.notes = []
         self.statements = []
+        procedure = data_block = None
         for token in tokens:
             if isinstance(token, Note):
+                assert data_block is None and procedure is None
                 logger.info(f"NOTE: {token}")
                 self.notes.append(token)
             elif isinstance(token, Action):
+                assert data_block is None and procedure is None
                 logger.debug(f"Action: {token.name}")
                 self.actions[token.name] = token
             elif isinstance(token, LabelledInstruction):
                 if isinstance(token.instruction, ProcedureInstruction):
-                    self.procedures[token.instruction.name] = len(self.statements)
+                    assert data_block is None
+                    procedure = token.instruction.name
+                    self.procedures[procedure] = len(self.statements)
+                    self.labels[procedure] = {}
+                elif isinstance(token.instruction, EndProcedureInstruction):
+                    procedure = None
                 elif isinstance(token.instruction, DataInstruction):
-                    self.data_blocks[token.instruction.name] = len(self.statements)
+                    assert procedure is None
+                    data_block = token.instruction.name
+                    self.data_blocks[data_block] = len(self.statements)
+                elif isinstance(token.instruction, EndDataInstruction):
+                    data_block = None
                 if not token.label is None:
-                    self.labels[token.label] = len(self.statements)
+                    assert not procedure is None
+                    self.labels[procedure][token.label] = len(self.statements)
                 self.statements.append(token)
             elif isinstance(token, Crc):
                 if not token.is_correct():
