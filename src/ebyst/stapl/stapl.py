@@ -180,7 +180,23 @@ class IrStopInstruction(Instruction):
     pass
 
 class PopInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        if len(tokens) == 1:
+            self.variable = tokens[0]
+            self.first = None
+            self.last = None
+        elif len(tokens) == 2:
+            self.variable = tokens[0]
+            self.first = tokens[1]
+            self.last = None
+        elif len(tokens) == 3:
+            self.variable = tokens[0]
+            self.first = tokens[1]
+            self.last = tokens[2]
+        else:
+            print(tokens)
+            assert False
 
 class PrintInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -191,7 +207,10 @@ class PrintInstruction(Instruction):
         return f"PRINT {', '.join(str(s) for s in self.parts)}"
 
 class PushInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        assert len(tokens) == 1
+        self.value = tokens[0]
 
 class StateInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -378,7 +397,7 @@ class StaplFile:
         irstop = (pp.CaselessKeyword("IRSTOP") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(IrStopInstruction)
         next =  (pp.CaselessKeyword("NEXT").suppress() - identifier - pp.Literal(";").suppress()).set_parse_action(NextInstruction)
         note = (pp.CaselessKeyword("NOTE").suppress() - pp.QuotedString("\"") - pp.QuotedString("\"") - pp.Literal(";").suppress()).set_parse_action(Note)
-        pop = ((pp.CaselessKeyword("POP") - identifier - pp.Suppress(pp.Literal(";")))).set_parse_action(PopInstruction)
+        pop = ((pp.CaselessKeyword("POP").suppress() - variable - pp.Suppress(pp.Literal(";")))).set_parse_action(PopInstruction)
         # postdr = ((pp.CaselessKeyword("POSTDR") - pp.Suppress(pp.Literal(";")))) # TODO
         # postir = (pp.CaselessKeyword("POSTIR") - pp.Suppress(pp.Literal(";"))) # TODO
         # predr = (pp.CaselessKeyword("PREDR") - pp.Suppress(pp.Literal(";"))) # TODO
@@ -388,7 +407,7 @@ class StaplFile:
         procedure = (pp.CaselessKeyword("PROCEDURE").suppress() - identifier -
                      pp.Group(pp.Opt(pp.CaselessKeyword("USES").suppress() - identifier - pp.ZeroOrMore(pp.Literal(",").suppress() - identifier))) -
                      pp.Literal(";").suppress()).set_parse_action(ProcedureInstruction)
-        push = (pp.CaselessKeyword("PUSH") - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(PushInstruction)
+        push = (pp.CaselessKeyword("PUSH").suppress() - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(PushInstruction)
         state = (pp.CaselessKeyword("STATE").suppress() - pp.OneOrMore(identifier) - pp.Literal(";").suppress()).set_parse_action(StateInstruction)
         wait_type = pp.Or((expression - pp.CaselessKeyword("CYCLES") -
                            pp.Opt(pp.Suppress(pp.Literal(",")) - expression - pp.CaselessKeyword("USEC")),

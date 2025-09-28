@@ -1,0 +1,43 @@
+NOTE "TEST" "4";
+NOTE "TEST" "3";
+NOTE "TEST" "2";
+NOTE "TEST" "10";
+NOTE "TEST" "1";
+
+NOTE "TEST" "100";
+
+ACTION TEST = DO_TEST, DO_TEST_ARRAY;
+
+PROCEDURE SUB;
+    INTEGER a;
+    PUSH 10;
+    POP a;
+    EXPORT "TEST", a;
+ENDPROC;
+
+PROCEDURE DO_TEST USES SUB;
+    INTEGER b = 100;
+    INTEGER c;
+    PUSH 1;
+    PUSH 2;
+    PUSH 3;
+    PUSH 4;
+    POP b;
+    EXPORT "TEST", b;
+    POP b;
+    EXPORT "TEST", b;
+    POP c;
+    EXPORT "TEST", c;
+    CALL SUB;
+    POP b;
+    EXPORT "TEST", b;
+ENDPROC;
+
+PROCEDURE DO_TEST_ARRAY;
+    INTEGER array[4];
+    PUSH 100;
+    POP array[2];
+    EXPORT "TEST", array[2];
+ENDPROC;
+
+CRC 0;
