@@ -21,6 +21,7 @@ import logging
 import pyparsing as pp
 
 from .expressions import Expression, Int
+from ..tap_controller import State
 
 logger = logging.getLogger(__name__)
 
@@ -212,18 +213,100 @@ class PushInstruction(Instruction):
         assert len(tokens) == 1
         self.value = tokens[0]
 
+class StateConvert:
+    def __init__(self,  s, loc, tokens):
+        assert len(tokens) == 1
+        if tokens[0] == "RESET":
+            self.state = State.TEST_LOGIC_RESET
+        elif tokens[0] == "IDLE":
+            self.state = State.RUN_TEST_IDLE
+        elif tokens[0] == "DRSELECT":
+            self.state = State.SELECT_DR_SCAN
+        elif tokens[0] == "DRCAPTURE":
+            self.state = State.CAPTURE_DR
+        elif tokens[0] == "DRSHIFt":
+            self.state = State.SHIFT_DR
+        elif tokens[0] == "DREXIT1":
+            self.state = State.EXIT1_DR
+        elif tokens[0] == "DRPAUSE":
+            self.state = State.PAUSE_DR
+        elif tokens[0] == "DREXIT2":
+            self.state = State.EXIT2_DR
+        elif tokens[0] == "DRUPDATE":
+            self.state = State.UPDATE_DR
+        elif tokens[0] == "IRSELECT":
+            self.state = State.SELECT_IR_SCAN
+        elif tokens[0] == "IRCAPTURE":
+            self.state = State.CAPTURE_IR
+        elif tokens[0] == "IRSHIFT":
+            self.state = State.SHIFT_IR
+        elif tokens[0] == "IREXIT1":
+            self.state = State.EXIT1_IR
+        elif tokens[0] == "IRPAUSE":
+            self.state = State.PAUSE_IR
+        elif tokens[0] == "IREXIT2":
+            self.state = State.EXIT2_IR
+        elif tokens[0] == "IRUPDATE":
+            self.state = State.UPDATE_IR
+        else:
+            assert False
+
 class StateInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
-        self.states = tokens
-        if not self.states[-1].upper() in ("RESET", "IDLE", "DRPAUSE", "IRPAUSE"):
-            raise Exception("State must end in one of RESET, IDLE, DRPAUSE, IRPAUSE")
+        self.states = [token.state for token in tokens]
+
+class WaitType:
+    def __init__(self,  s, loc, tokens):
+        self.usec = self.cycles = Int(0)
+        if len(tokens) == 2 and tokens[1].upper() == "USEC":
+            self.usec = tokens[0]
+        elif len(tokens) == 2 and tokens[1].upper() == "CYCLES":
+            self.cycles = tokens[0]
+        elif len(tokens) == 4 and tokens[1].upper() == "CYCLES" and tokens[3].upper() == "USEC":
+            self.cycles = tokens[0]
+            self.usec = tokens[2]
+        else:
+            assert False
 
 class TRSTInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        if len(tokens) == 0:
+            self.wait_cycles = self.wait_usec = Int(0)
+        elif len(tokens) == 1:
+            self.wait_cycles = tokens[0].cycles
+            self.wait_usec = tokens[0].usec
+        else:
+            assert False
 
 class WaitInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+
+        self.wait_state = self.end_state = None
+        self.wait_usec = self.wait_cycles = Int(0)
+
+        i = 0
+        if len(tokens) > i and not isinstance(tokens[i], WaitType):
+            self.wait_state = tokens[i].state
+            i += 1
+
+        if len(tokens) > i and isinstance(tokens[i], WaitType):
+            self.wait_cycles = tokens[i].cycles
+            self.wait_usec = tokens[i].usec
+            i += 1
+        else:
+            assert False
+
+        if len(tokens) > i and not isinstance(tokens[i], WaitType):
+            self.end_state = tokens[i].state
+            i += 1
+
+        if len(tokens) > i and isinstance(tokens[i], WaitType):
+            raise Exception("MAX wait times are not supported")
+
+        assert i == len(tokens)
 
 class ForInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -348,6 +431,22 @@ class StaplFile:
         expression = Expression.get_parse_rule()
         identifier = pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]"))
         variable_decl = (identifier + pp.Opt(pp.Literal("[").suppress() - expression - pp.Literal("]").suppress())).set_parse_action(VariableDecl)
+        state_name = pp.Or((pp.CaselessKeyword("RESET"),
+                            pp.CaselessKeyword("IDLE"),
+                            pp.CaselessKeyword("DRSELECT"),
+                            pp.CaselessKeyword("DRCAPTURE"),
+                            pp.CaselessKeyword("DRSHIFT"),
+                            pp.CaselessKeyword("DREXIT1"),
+                            pp.CaselessKeyword("DRPAUSE"),
+                            pp.CaselessKeyword("DREXIT2"),
+                            pp.CaselessKeyword("DRUPDATE"),
+                            pp.CaselessKeyword("IRSELECT"),
+                            pp.CaselessKeyword("IRCAPTURE"),
+                            pp.CaselessKeyword("IRSHIFT"),
+                            pp.CaselessKeyword("IREXIT1"),
+                            pp.CaselessKeyword("IRPAUSE"),
+                            pp.CaselessKeyword("IREXIT2"),
+                            pp.CaselessKeyword("IRUPDATE"))).set_parse_action(StateConvert)
 
         str_expression = pp.Or((pp.QuotedString("\""), expression)) # TODO
 
@@ -408,14 +507,13 @@ class StaplFile:
                      pp.Group(pp.Opt(pp.CaselessKeyword("USES").suppress() - identifier - pp.ZeroOrMore(pp.Literal(",").suppress() - identifier))) -
                      pp.Literal(";").suppress()).set_parse_action(ProcedureInstruction)
         push = (pp.CaselessKeyword("PUSH").suppress() - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(PushInstruction)
-        state = (pp.CaselessKeyword("STATE").suppress() - pp.OneOrMore(identifier) - pp.Literal(";").suppress()).set_parse_action(StateInstruction)
-        wait_type = pp.Or((expression - pp.CaselessKeyword("CYCLES") -
-                           pp.Opt(pp.Suppress(pp.Literal(",")) - expression - pp.CaselessKeyword("USEC")),
-                           expression - pp.CaselessKeyword("USEC")))
-        trst = (pp.CaselessKeyword("TRST") - wait_type - pp.Suppress(pp.Literal(";"))).set_parse_action(TRSTInstruction)
-        wait = (pp.CaselessKeyword("WAIT") - pp.Opt(identifier - pp.Suppress(pp.Literal(","))) -
-                        wait_type - pp.Opt(pp.Suppress(pp.Literal(",")) - identifier) -
-                        pp.Opt(pp.CaselessKeyword("MAX") - wait_type) - pp.Suppress(pp.Literal(";"))).set_parse_action(WaitInstruction)
+        state = (pp.CaselessKeyword("STATE").suppress() - pp.OneOrMore(state_name) - pp.Literal(";").suppress()).set_parse_action(StateInstruction)
+        wait_type = pp.Or((expression - pp.CaselessKeyword("CYCLES") - pp.Opt(pp.Suppress(pp.Literal(",")) + expression + pp.CaselessKeyword("USEC")),
+                           expression - pp.CaselessKeyword("USEC"))).set_parse_action(WaitType)
+        trst = (pp.CaselessKeyword("TRST").suppress() - pp.Opt(wait_type) - pp.Suppress(pp.Literal(";"))).set_parse_action(TRSTInstruction)
+        wait = (pp.CaselessKeyword("WAIT").suppress() - pp.Opt(state_name - pp.Suppress(pp.Literal(","))) -
+                        wait_type - pp.Opt(pp.Suppress(pp.Literal(",")) - state_name) -
+                        pp.Opt(pp.CaselessKeyword("MAX").suppress() - wait_type) - pp.Suppress(pp.Literal(";"))).set_parse_action(WaitInstruction)
 
         opt_label = pp.Group(pp.Opt(identifier + pp.Suppress(pp.Literal(":"))))
         instruction <<= pp.Or((assignment, boolean, call, data, drscan, drstop, end_data, end_procedure, exit, export,

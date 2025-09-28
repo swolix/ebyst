@@ -23,7 +23,7 @@ from .data import IntegerVariable, IntegerArrayVariable, BoolVariable, BoolArray
 from .stapl import (AssignmentInstruction, BooleanInstruction, CallInstruction, DataInstruction, EndDataInstruction,
                     EndProcedureInstruction, ExitInstruction, ExportInstruction, ForInstruction, GotoInstruction,
                     IfInstruction, IntegerInstruction, NextInstruction, PopInstruction, PrintInstruction,
-                    ProcedureInstruction, PushInstruction)
+                    ProcedureInstruction, PushInstruction, StateInstruction, TRSTInstruction, WaitInstruction)
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +195,19 @@ class StaplInterpreter:
                     self.state.scope.update(data)
         elif isinstance(instruction, PushInstruction):
             self.state.stack.append(instruction.value.evaluate(self.state.scope))
+        elif isinstance(instruction, StateInstruction):
+            for state in instruction.states:
+                self.ctl.enter_state(state)
+        elif isinstance(instruction, TRSTInstruction):
+            self.ctl.trst(cycles=instruction.wait_cycles.evaluate(self.state.scope),
+                          usec=instruction.wait_usec.evaluate(self.state.scope))
+        elif isinstance(instruction, WaitInstruction):
+            if not instruction.wait_state is None:
+                self.ctl.enter_state(instruction.wait_state)
+            self.ctl.wait(cycles=instruction.wait_cycles.evaluate(self.state.scope),
+                          usec=instruction.wait_usec.evaluate(self.state.scope))
+            if not instruction.end_state is None:
+                self.ctl.enter_state(instruction.end_state)
         else:
             raise NotImplementedError(f"{instruction} not implemented")
 

@@ -258,6 +258,9 @@ class TapController:
     def trace(self, fn, **pins):
         self.traces.append(Trace(fn, **pins))
 
+    def enter_state(self, state: State):
+        self._goto(state)
+
     def _goto(self, target_state: State, tdi=0):
         state = self.state
         logger.debug(f"Going from {state.name} to {target_state.name}")
@@ -358,3 +361,8 @@ class TapController:
         
         self.driver.transmit_tms_str(tms, tdi)
         self.state = state
+
+    def wait(self, cycles, usec):
+        """Wait for until both (tck-)cycles and usec are satisfied"""
+        raise NotImplementedError()
+
