@@ -66,7 +66,7 @@ class Instruction:
     def __init__(self,  s, loc, tokens):
         self.loc = loc
 
-    def execute(self, state):
+    def execute(self, interpreter):
         raise NotImplementedError(f"{type(self)} not implemented")
 
 class LabelledInstruction(Instruction):
@@ -76,8 +76,8 @@ class LabelledInstruction(Instruction):
         self.label = tokens[0][0] if len(tokens[0]) > 0 else None
         self.instruction = tokens[1]
 
-    def execute(self, state):
-        return self.instruction.execute(state)
+    def execute(self, interpreter):
+        return self.instruction.execute(interpreter)
 
 class Assignment(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -101,8 +101,8 @@ class Assignment(Instruction):
             print(tokens)
             assert False
 
-    def execute(self, state):
-        v = self.value.evaluate(state.scope)
+    def execute(self, interpreter):
+        v = self.value.evaluate(interpreter.scope)
         if not self.last is None:
             first = self.first.evaluate()
             last = self.last.evaluate()
@@ -110,14 +110,14 @@ class Assignment(Instruction):
             if last - first + 1 != len(v):
                 raise ValueError(f"Can't assign slice of length {len(v)} to slice of length {length}")
             logger.debug(f"Setting {self.variable}[{first}] to {v}...")
-            state.scope[self.variable].assign(first, v)
+            interpreter.scope[self.variable].assign(first, v)
         elif not self.first is None:
             first = self.first.evaluate()
             logger.debug(f"Setting {self.variable}[{first}] to {v}...")
-            state.scope[self.variable].assign(first, v)
+            interpreter.scope[self.variable].assign(first, v)
         else:
             logger.debug(f"Setting {self.variable} to {v}...")
-            state.scope[self.variable].assign(v)
+            interpreter.scope[self.variable].assign(v)
 
 class BooleanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -137,20 +137,20 @@ class BooleanInstruction(Instruction):
                 assert 1 == len(tokens) - 1
                 self.value = tokens[1]
 
-    def execute(self, state):
+    def execute(self, interpreter):
         if self.length is None:
-            state.scope[self.name] = var = BoolVariable()
+            interpreter.scope[self.name] = var = BoolVariable()
 
             if not self.value is None:
-                v2 = self.value.evaluate(state.scope)
+                v2 = self.value.evaluate(interpreter.scope)
                 logger.debug(f"Setting {self.name} to {v2}...")
                 var.assign(v2)
         else:
-            state.scope[self.name] = var = BoolArrayVariable(self.length)
+            interpreter.scope[self.name] = var = BoolArrayVariable(self.length)
  
             if not self.value is None:
                 for i in range(self.length):
-                    v = self.value[i].evaluate(state.scope)
+                    v = self.value[i].evaluate(interpreter.scope)
                     logger.debug(f"Setting {self.name}[{i}] to {v}...")
                     var[i].assign(v)
 
@@ -159,8 +159,8 @@ class CallInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         self.procedure = tokens[1]
 
-    def execute(self, state):
-        state.procedures[self.procedure].execute(state.new())
+    def execute(self, interpreter):
+        interpreter.call(self.procedure)
 
 class DrScanInstruction(Instruction):
     pass
@@ -177,15 +177,15 @@ class ExportInstruction(Instruction):
         self.key = tokens[0]
         self.parts = tokens[1:]
 
-    def execute(self, state):
+    def execute(self, interpreter):
         s = ""
         for part in self.parts:
             if isinstance(part, Evaluatable):
-                s += str(part.evaluate(state.scope))
+                s += str(part.evaluate(interpreter.scope))
             else:
                 s += str(part)
         logger.info(f"EXPORT {self.key}: {s}")
-        state.ctl.export(self.key, s)
+        interpreter.ctl.export(self.key, s)
 
     def __repr__(self):
         return f"EXPORT {', '.join(str(s) for s in self.parts)}"
@@ -202,10 +202,10 @@ class IfInstruction(Instruction):
         self.condition = tokens[0]
         self.instruction = tokens[1]
 
-    def execute(self, state):
-        v = self.condition.evaluate(state.scope)
+    def execute(self, interpreter):
+        v = self.condition.evaluate(interpreter.scope)
         if Bool(v):
-            self.instruction.execute(state)
+            self.instruction.execute(interpreter)
 
 class IntegerInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -225,20 +225,20 @@ class IntegerInstruction(Instruction):
                 assert 1 == len(tokens) - 1
                 self.value = tokens[1]
 
-    def execute(self, state):
+    def execute(self, interpreter):
         if self.length is None:
-            state.scope[self.name] = var = IntegerVariable()
+            interpreter.scope[self.name] = var = IntegerVariable()
 
             if not self.value is None:
-                v2 = self.value.evaluate(state.scope)
+                v2 = self.value.evaluate(interpreter.scope)
                 logger.debug(f"Setting {self.name} to {v2}...")
                 var.assign(v2)
         else:
-            state.scope[self.name] = var = IntegerArrayVariable(self.length)
+            interpreter.scope[self.name] = var = IntegerArrayVariable(self.length)
             
             if not self.value is None:
                 for i in range(self.length):
-                    v = self.value[i].evaluate(state.scope)
+                    v = self.value[i].evaluate(interpreter.scope)
                     logger.debug(f"Setting {self.name}[{i}] to {v}...")
                     var[i].assign(v)
 
@@ -248,8 +248,8 @@ class IrScanInstruction(Instruction):
         self.length = tokens[0]
         self.value = tokens[1]
 
-    def execute(self, state):
-        logger.debug(f"Loading {self.value.evaluate(state.scope)} into IR")
+    def execute(self, interpreter):
+        logger.debug(f"Loading {self.value.evaluate(interpreter.scope)} into IR")
 
 class IrStopInstruction(Instruction):
     pass
@@ -262,11 +262,11 @@ class PrintInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         self.parts = tokens
 
-    def execute(self, state):
+    def execute(self, interpreter):
         s = ""
         for part in self.parts:
             if isinstance(part, Expression):
-                s += str(part.evaluate(state.scope))
+                s += str(part.evaluate(interpreter.scope))
             else:
                 s += str(part)
         print(s)
@@ -284,7 +284,7 @@ class StateInstruction(Instruction):
         if not self.states[-1].upper() in ("RESET", "IDLE", "DRPAUSE", "IRPAUSE"):
             raise Exception("State must end in one of RESET, IDLE, DRPAUSE, IRPAUSE")
 
-    def execute(self, state):
+    def execute(self, interpreter):
         for state in self.states:
             logger.debug(f"Entering state {state}...")
         logger.warning(f"Instruction not implemented")
@@ -305,15 +305,15 @@ class For(Instruction):
         self.step = tokens[0][3] if len(tokens[0]) == 4 else Int(1)
         self.statements = tokens[1]
 
-    def execute(self, state):
-        start = self.start.evaluate(state.scope)
-        step = self.step.evaluate(state.scope)
-        end = self.end.evaluate(state.scope)
-        state.scope[self.var] = var = IntegerVariable()
+    def execute(self, interpreter):
+        start = self.start.evaluate(interpreter.scope)
+        step = self.step.evaluate(interpreter.scope)
+        end = self.end.evaluate(interpreter.scope)
+        interpreter.scope[self.var] = var = IntegerVariable()
         var.assign(start)
         while True:
             for statement in self.statements:
-                statement.execute(state)
+                statement.execute(interpreter)
             var += step
             if Int(step) > 0 and var >= end:
                 break
@@ -325,22 +325,28 @@ class Procedure:
         assert len(tokens) == 3
         self.enter_label = tokens[0][0][0] if len(tokens[0][0]) > 0 else None
         self.name = tokens[0][1]
+        self.uses = tokens[0][2]
         self.statements = tokens[1]
         self.exit_label = tokens[2][0][0] if len(tokens[2][0]) > 0 else None
+        print("BBB", self.statements[0])
 
     def __repr__(self):
         return f"<Procedure {self.name} ({len(self.statements)} statements)>"
 
-    def execute(self, state):
+    def execute(self, interpreter):
         for statement in self.statements:
-            statement.execute(state)
+            statement.execute(interpreter)
 
 class Data:
     def __init__(self,  _s, _loc, tokens):
         assert len(tokens) == 3
         assert len(tokens[0]) >= 2
         self.name = tokens[0][1]
-        self.statements = tokens[1]
+        self.statements = tokens[1][0]
+
+    def execute(self, interpreter):
+        for statement in self.statements:
+            statement.execute(interpreter)
 
     def __repr__(self):
         return f"<Data {self.name} ({len(self.statements)} statements)>"
@@ -375,15 +381,50 @@ class Crc:
         else:
             return "<Crc (incorrect)>"
 
-class InterpreterState:
-    def __init__(self, ctl, procedures):
-        self.stack = []
-        self.scope = VariableScope()
+class Interpreter:
+    def __init__(self, ctl, stapl):
+        self.stapl = stapl
         self.ctl = ctl
-        self.procedures = procedures
+        self.call_stack = []
+        self.data_scopes = {}
+        self.scope = None
 
-    def new(self):
-        return InterpreterState(self.ctl, self.procedures)
+    def call(self, procedure):
+        assert isinstance(procedure, str)
+        procedure = self.stapl.procedures[procedure]
+        self.call_stack.append(self.scope)
+        self.scope = VariableScope()
+
+        for dep in procedure.uses:
+            subproc = self.stapl.procedures.get(dep)
+            data = self.data_scopes.get(dep)
+            if not (data is None or subproc is None):
+                raise Exception(f"{dep} defined multuple times")
+            elif data is None and subproc is None:
+                raise Exception(f"{dep} not found")
+            if not data is None:
+                for k, v in data.items():
+                    self.scope[k] = v
+                
+        procedure.execute(self)
+        self.scope = self.call_stack.pop()
+
+    def run(self, action):
+        for name, data in self.stapl.data_blocks.items():
+            self.scope = VariableScope()
+            data.execute(self)
+            self.data_scopes[name] = self.scope
+            self.scope = None
+
+        try:
+            action = self.stapl.actions[action]
+        except KeyError:
+            raise KeyError(f"Action {action} not found")
+        for procedure, opt in action.procedures:
+            try:
+                self.call(procedure)
+            except KeyError:
+                raise KeyError(f"Procedure {procedure} not found")
 
 class StaplFile:
     """STAPL parser"""
@@ -391,6 +432,7 @@ class StaplFile:
     def __init__(self,  tokens):
         self.actions = {}
         self.procedures = {}
+        self.data_blocks = {}
         self.notes = []
         for token in tokens:
             if isinstance(token, Note):
@@ -402,21 +444,18 @@ class StaplFile:
             elif isinstance(token, Procedure):
                 logger.debug(f"Procedure: {token.name}")
                 self.procedures[token.name] = token
+            elif isinstance(token, Data):
+                logger.debug(f"Data: {token.name}")
+                self.data_blocks[token.name] = token
             elif isinstance(token, Crc):
                 if not token.is_correct():
                     logger.warning(f"CRC check failed ({token.actual:04x}, expected: {token.expected:04x})")
+            else:
+                assert False
 
     def execute(self, ctl, action):
-        try:
-            action = self.actions[action]
-        except KeyError:
-            raise KeyError(f"Action {action} not found")
-        for procedure, opt in action.procedures:
-            try:
-                procedure = self.procedures[procedure]
-            except KeyError:
-                raise KeyError(f"Procedure {procedure} not found")
-            procedure.execute(InterpreterState(ctl, self.procedures))
+        interpreter = Interpreter(ctl, self)
+        interpreter.run(action)
 
     @classmethod
     def parse(cls, f):
