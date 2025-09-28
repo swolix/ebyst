@@ -147,7 +147,7 @@ class BooleanInstruction(Instruction):
                 var.assign(v2)
         else:
             interpreter.scope[self.name] = var = BoolArrayVariable(self.length)
- 
+
             if not self.value is None:
                 for i in range(self.length):
                     v = self.value[i].evaluate(interpreter.scope)
@@ -235,7 +235,7 @@ class IntegerInstruction(Instruction):
                 var.assign(v2)
         else:
             interpreter.scope[self.name] = var = IntegerArrayVariable(self.length)
-            
+
             if not self.value is None:
                 for i in range(self.length):
                     v = self.value[i].evaluate(interpreter.scope)
@@ -405,7 +405,7 @@ class Interpreter:
             if not data is None:
                 for k, v in data.items():
                     self.scope[k] = v
-                
+
         procedure.execute(self)
         self.scope = self.call_stack.pop()
 
