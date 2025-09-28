@@ -2,7 +2,7 @@
 import os, sys
 import logging
 
-from ebyst.stapl import StaplFile, ExitCode
+from ebyst.stapl import StaplFile, StaplInterpreter, StaplExitCode
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +48,13 @@ class Checker:
         return len(self.checks) == 0
 
 def test_action(stapl_file, action):
+    chk = Checker(stapl_file)
+    interpreter = StaplInterpreter(chk, stapl_file)
     logger.info(f"Running {action}")
-    chk = Checker(stapl)
     exit_code = None
     try:
-        stapl.execute(chk, action)
-    except ExitCode as e:
+        interpreter.run(action)
+    except StaplExitCode as e:
         exit_code = e.code
     if not chk.done():
         raise Exception(f"EXPORT TEST output count doesn't match NOTE TEST output count")
