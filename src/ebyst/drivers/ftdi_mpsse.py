@@ -54,7 +54,11 @@ class MPSSE(Driver):
 
         urls = []
         for dev, ifaces in Ftdi.list_devices():
-            urls.append(f"ftdi://0x{dev.vid:04x}:0x{dev.pid:04x}:{dev.sn}/1")
+            for iface in range(ifaces):
+                if not dev.sn is None:
+                    urls.append(f"ftdi://0x{dev.vid:04x}:0x{dev.pid:04x}:{dev.sn}/{iface+1}")
+                else:
+                    urls.append(f"ftdi://0x{dev.vid:04x}:0x{dev.pid:04x}/{iface+1}")
         return urls
 
     def transfer(self, tms, tdi):
