@@ -153,26 +153,26 @@ class TapController:
             # load IR with 0
             self.driver.transmit_tdi_str(bitarray('0') * MAX_IR_CHAIN_LENGTH)
             if self.driver.transfer(0, 0) != 0:
-                raise Exception("Chain detection failed: 0 not coming out")
+                raise Exception("Chain detection failed: TDO stuck at 1")
             # load IR with 1, find rising edge position
             irlen = 0
             while self.driver.transfer(0, 1) == 0:
                 irlen += 1
                 if irlen >= MAX_IR_CHAIN_LENGTH:
-                    raise Exception("Chain detection failed: 1 not coming out")
+                    raise Exception("Chain detection failed: TDO stuck at 0")
             # IR is now all 1's => BYPASS
             self._goto(State.UPDATE_IR, 1)
             self._goto(State.SHIFT_DR)
             # load BYPASS with 0
             self.driver.transmit_tdi_str(bitarray('0') * MAX_IR_CHAIN_LENGTH)
             if self.driver.transfer(0, 0) != 0:
-                raise Exception("Chain detection failed: 0 not coming out")
+                raise Exception("Chain detection failed: TDO stuck at 1")
             # load BYPASS with 1, find rising edge position
             drlen = 0
             while self.driver.transfer(0, 1) == 0:
                 drlen += 1
                 if drlen >= MAX_IR_CHAIN_LENGTH:
-                    raise Exception("Chain detection failed: 1 not coming out")
+                    raise Exception("Chain detection failed: TDO stuck at 0")
         finally:
             self._goto(State.TEST_LOGIC_RESET)
 
