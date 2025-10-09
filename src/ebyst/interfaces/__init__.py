@@ -5,3 +5,4 @@ from .flash import MT25Q
 from .ddr3 import DDR3
 from .ddr4 import DDR4
 from .hyperram import HyperRAM
+from .net import Net, BiasResistor
