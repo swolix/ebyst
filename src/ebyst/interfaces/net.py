@@ -58,9 +58,9 @@ class Net:
                         await ctl.cycle()
                 for receiver in self.receivers:
                     if receiver.get_value() != value:
-                        raise Exception(f"{name} - {receiver} stuck at {0 if value else 1}")
+                        raise Exception(f"{self.name} - {receiver} stuck at {0 if value else 1}")
 
-        if not self.bias != BiasResistor.NONE:
+        if self.bias != BiasResistor.NONE:
             if not self.driver is None:
                 self.driver.output_enable(False)
             for receiver in self.receivers:
