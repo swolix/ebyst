@@ -190,9 +190,9 @@ class TapController:
         if len(self.chain) != 1:
             logger.warning("Multiple devices in chain are not tested")
         if drlen != len(self.chain):
-            raise Exception("Incorrect nr of devices in chain ({drlen} detected)")
+            raise Exception(f"Incorrect nr of devices in chain ({drlen} detected)")
         if irlen != sum(dev.irlen for dev in self.chain):
-            raise Exception("Incorrect total ir length ({irlen} detected)")
+            raise Exception(f"Incorrect total ir length ({irlen} detected)")
 
         max_freq = self.max_freq
         for dev in self.chain:
