@@ -44,56 +44,56 @@ class I2C:
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(0)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SCL.set_value(0)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
     
     async def _clock_out_bit(self, bit: int):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(bit)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SCL.set_value(1)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SCL.set_value(0)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
 
     async def _clock_in_bit(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(False)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SCL.set_value(1)
         await self.ctl.cycle()
         r = self.SDA.get_value()
         self.SCL.set_value(0)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         return r
 
     async def _restart(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SDA.set_value(1)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SCL.set_value(1)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SDA.set_value(0)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SCL.set_value(0)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
 
     async def _stop(self):
         self.SCL.output_enable(True)
         self.SDA.output_enable(True)
         self.SCL.set_value(1)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
         self.SDA.set_value(1)
-        await self.ctl.cycle(sample=False)
+        await self.ctl.cycle()
 
     async def write(self, dev_address, reg_address=None, data=0):
         await self._start()
 
         for i in range(7):
-            await self._clock_out_bit((dev_address >> (7-i)) & 1)
+            await self._clock_out_bit((dev_address >> (6-i)) & 1)
         await self._clock_out_bit(0)
         if await self._clock_in_bit(): raise I2C.NackError()
 
@@ -117,7 +117,7 @@ class I2C:
             if self.address_bits > 0:
                 if reg_address is None: raise ValueError("reg_address cannot be None with >0 address bits")
                 for i in range(7):
-                    await self._clock_out_bit((dev_address >> (7-i)) & 1)
+                    await self._clock_out_bit((dev_address >> (6-i)) & 1)
                 await self._clock_out_bit(0)
                 if await self._clock_in_bit(): raise I2C.NackError()
 
@@ -131,7 +131,7 @@ class I2C:
                 if not reg_address is None: raise ValueError("reg_address must be None with 0 address bits")
 
             for i in range(7):
-                await self._clock_out_bit((dev_address >> (7-i)) & 1)
+                await self._clock_out_bit((dev_address >> (6-i)) & 1)
             await self._clock_out_bit(1)
             if await self._clock_in_bit(): raise I2C.NackError()
 
