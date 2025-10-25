@@ -114,7 +114,10 @@ class DrScanInstruction(Instruction):
     pass
 
 class DrStopInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        assert len(tokens) == 1
+        self.stae = tokens[0].state
 
 class ExitInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -175,7 +178,10 @@ class IrScanInstruction(Instruction):
         self.value = tokens[1]
 
 class IrStopInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        assert len(tokens) == 1
+        self.stae = tokens[0].state
 
 class PopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -319,6 +325,30 @@ class NextInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 1
         self.var = tokens[0]
+
+class ScanModifierInstruction(Instruction):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        if len(tokens) == 1:
+            self.bits = tokens[0]
+            self.value = None
+        elif len(tokens) == 2:
+            self.bits = tokens[0]
+            self.value = tokens[1]
+        else:
+            assert False
+
+class PostDrInstruction(ScanModifierInstruction):
+    pass
+
+class PostIrInstruction(ScanModifierInstruction):
+    pass
+
+class PreDrInstruction(ScanModifierInstruction):
+    pass
+
+class PreIrInstruction(ScanModifierInstruction):
+    pass
 
 class ProcedureInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -472,7 +502,7 @@ class StaplFile:
                           pp.Opt(pp.Literal(",").suppress() - pp.CaselessKeyword("COMPARE") - expression -
                                  pp.Literal(",").suppress() - expression + pp.Literal(",").suppress() - expression) -
                           pp.Literal(";").suppress()).set_parse_action(DrScanInstruction)
-        drstop = (pp.CaselessKeyword("DRSTOP") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(DrStopInstruction)
+        drstop = (pp.CaselessKeyword("DRSTOP").suppress() - state_name - pp.Suppress(pp.Literal(";"))).set_parse_action(DrStopInstruction)
         end_data = (pp.CaselessKeyword("ENDDATA").suppress() - pp.Literal(";").suppress()).set_parse_action(EndDataInstruction)
         end_procedure = (pp.CaselessKeyword("ENDPROC").suppress() - pp.Literal(";").suppress()).set_parse_action(EndProcedureInstruction)
         exit = (pp.CaselessKeyword("EXIT").suppress() - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(ExitInstruction)
@@ -491,14 +521,14 @@ class StaplFile:
                           pp.Opt(pp.Literal(",").suppress() - pp.CaselessKeyword("COMPARE") - expression -
                                  pp.Literal(",").suppress() - expression - pp.Literal(",").suppress() - expression) -
                           pp.Suppress(pp.Literal(";"))).set_parse_action(IrScanInstruction)
-        irstop = (pp.CaselessKeyword("IRSTOP") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(IrStopInstruction)
+        irstop = (pp.CaselessKeyword("IRSTOP").suppress() - state_name - pp.Suppress(pp.Literal(";"))).set_parse_action(IrStopInstruction)
         next =  (pp.CaselessKeyword("NEXT").suppress() - identifier - pp.Literal(";").suppress()).set_parse_action(NextInstruction)
         note = (pp.CaselessKeyword("NOTE").suppress() - pp.QuotedString("\"") - pp.QuotedString("\"") - pp.Literal(";").suppress()).set_parse_action(Note)
         pop = ((pp.CaselessKeyword("POP").suppress() - variable - pp.Suppress(pp.Literal(";")))).set_parse_action(PopInstruction)
-        # postdr = ((pp.CaselessKeyword("POSTDR") - pp.Suppress(pp.Literal(";")))) # TODO
-        # postir = (pp.CaselessKeyword("POSTIR") - pp.Suppress(pp.Literal(";"))) # TODO
-        # predr = (pp.CaselessKeyword("PREDR") - pp.Suppress(pp.Literal(";"))) # TODO
-        # preir = (pp.CaselessKeyword("PREIR") - pp.Suppress(pp.Literal(";"))) # TODO
+        postdr = ((pp.CaselessKeyword("POSTDR").suppress() - expression - pp.Opt(pp.Literal(",") - expression) - pp.Literal(";").suppress())).set_parse_action(PostDrInstruction)
+        postir = ((pp.CaselessKeyword("POSTIR").suppress() - expression - pp.Opt(pp.Literal(",") - expression) - pp.Literal(";").suppress())).set_parse_action(PostIrInstruction)
+        predr = ((pp.CaselessKeyword("PREDR").suppress() - expression - pp.Opt(pp.Literal(",") - expression) - pp.Literal(";").suppress())).set_parse_action(PreDrInstruction)
+        preir = ((pp.CaselessKeyword("PREIR").suppress() - expression - pp.Opt(pp.Literal(",") - expression) - pp.Literal(";").suppress())).set_parse_action(PreIrInstruction)
         print_ = (pp.CaselessKeyword("PRINT").suppress() - str_expression -
                   pp.ZeroOrMore(pp.Suppress(pp.Literal(",")) - str_expression) - pp.Literal(";").suppress()).set_parse_action(PrintInstruction)
         procedure = (pp.CaselessKeyword("PROCEDURE").suppress() - identifier -

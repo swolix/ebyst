@@ -49,6 +49,8 @@ class StaplInterpreter:
         self.call_stack = []
         self.data_scopes = {}
         self.state = None
+        self.ir_stop = State.RUN_TEST_IDLE
+        self.dr_stop = State.RUN_TEST_IDLE
 
     def execute(self, instruction=None):
         assert not self.state is None
@@ -97,6 +99,13 @@ class StaplInterpreter:
             self.state = StaplInterpreter.State(self.stapl.procedures[instruction.procedure], instruction.procedure)
         elif isinstance(instruction, DataInstruction):
             pass
+        elif isinstance(instruction, DrScanInstruction):
+            raise NotImplementedError()
+        elif isinstance(instruction, DrStopInstruction):
+            if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
+                self.dr_stop = instruction.state
+            else:
+                raise Exception("Invalid state for DRSTOP")
         elif isinstance(instruction, EndDataInstruction):
             return False
         elif isinstance(instruction, EndProcedureInstruction):
@@ -146,6 +155,13 @@ class StaplInterpreter:
                 var = ArrayVariable(v)
             self.state.scope[instruction.name] = var
             logger.debug(f"Setting {instruction.name} to {v}...")
+        elif isinstance(instruction, IrScanInstruction):
+            raise NotImplementedError()
+        elif isinstance(instruction, IrStopInstruction):
+            if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
+                self.ir_stop = instruction.state
+            else:
+                raise Exception("Invalid state for IRSTOP")
         elif isinstance(instruction, NextInstruction):
             if len(self.state.loop_stack) == 0:
                 raise Exception("NEXT without FOR")
@@ -222,6 +238,9 @@ class StaplInterpreter:
             done = not self.execute()
 
     def run(self, action):
+        self.ir_stop = State.RUN_TEST_IDLE
+        self.dr_stop = State.RUN_TEST_IDLE
+
         for name, pc in self.stapl.data_blocks.items():
             logger.info(f"Initializing {name}...")
             self._run_procedure(pc)
