@@ -5,6 +5,26 @@ import logging
 from ebyst.stapl import StaplFile, StaplInterpreter, StaplExitCode
 from ebyst import JtagState as State
 
+class ColorFormatter(logging.Formatter):
+    """Custom formatter to add colors to log levels."""
+
+    # Define color codes
+    COLORS = {
+        "DEBUG": "\033[0;90m",
+        "INFO": "\033[1;97m",
+        "WARNING": "\033[1;33m",
+        "ERROR": "\033[1;31m",
+        "CRITICAL": "\033[1;41m"
+    }
+
+    RESET = "\033[0;0m"
+
+    def format(self, record):
+        log_color = self.COLORS.get(record.levelname, self.RESET)
+        record.levelname = f"{log_color}{record.levelname}{self.RESET}"
+        record.msg = f"{log_color}{record.msg}{self.RESET}"
+        return super().format(record)
+
 logger = logging.getLogger(__name__)
 
 def get_all_stapls(root):
@@ -31,15 +51,13 @@ class Checker:
 
     def check(self, label):
         if len(self.checks) == 0:
-            print(f"CHECK {label} == ??: ", end='')
-            print("FAIL")
+            logger.error(f"CHECK {label} == ??: FAIL")
             self.errors += 1
         else:
-            print(f"CHECK {label} == {self.checks[0]}: ", end='')
             if self.checks[0] == str(label):
-                print("OK")
+                logger.debug(f"CHECK {label} == {self.checks[0]}: OK")
             else:
-                print("FAIL")
+                logger.error(f"CHECK {label} == {self.checks[0]}: FAIL")
                 self.errors += 1
             self.checks.pop(0)
         self.total += 1
@@ -113,8 +131,12 @@ def test_action(stapl_file, action):
         raise Exception(f"One or more checks failed")
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    formatter = ColorFormatter("[%(asctime)s] [%(levelname)s] %(message)s", "%H:%M:%S")
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
     if len(sys.argv) == 1:
         for fn in sorted(get_all_stapls("stapl/tests")):
