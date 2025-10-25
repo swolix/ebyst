@@ -191,7 +191,8 @@ class Expression(Evaluatable):
         function = (pp.Group(pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$") +
                              pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
-        expression1 = (function | variable | literal).set_parse_action(cls)
+        expression0 = (function | variable | literal).set_parse_action(cls)
+        expression1 = expression0 | (pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())
         expression2 = (pp.Opt(pp.one_of("- ! ~")) + expression1).set_parse_action(cls)
         expression3 = (expression2 + pp.ZeroOrMore(pp.one_of("* / %") + expression2)).set_parse_action(cls)
         expression4 = (expression3 + pp.ZeroOrMore(pp.one_of("+ -") + expression3)).set_parse_action(cls)
