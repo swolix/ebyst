@@ -62,7 +62,8 @@ class VariableDecl:
 
 class Instruction:
     def __init__(self,  s, loc, tokens):
-        self.loc = loc
+        self.line = pp.lineno(loc, s)
+        self.col = pp.col(loc, s)
 
 class LabelledInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -101,23 +102,13 @@ class BooleanInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         self.name = tokens[0].name
         self.length = None if tokens[0].length is None else int(tokens[0].length.evaluate())
-
-        if not self.length is None:
-            self.value = [None] * self.length
-            if len(tokens) > 1:
-                assert self.length == len(tokens) - 1
-                for i in range(self.length):
-                    self.value[i] = tokens[i+1]
-        else:
-            self.value = None
-            if len(tokens) > 1:
-                assert 1 == len(tokens) - 1
-                self.value = tokens[1]
+        self.value = tokens[1]
 
 class CallInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
-        self.procedure = tokens[1]
+        assert len(tokens) == 1
+        self.procedure = tokens[0]
 
 class DrScanInstruction(Instruction):
     pass
@@ -160,16 +151,22 @@ class IntegerInstruction(Instruction):
         self.length = None if tokens[0].length is None else int(tokens[0].length.evaluate())
 
         if not self.length is None:
-            self.value = [None] * self.length
+            self.value = [Int(0)] * self.length
             if len(tokens) > 1:
                 assert self.length == len(tokens) - 1
                 for i in range(self.length):
                     self.value[i] = tokens[i+1]
         else:
-            self.value = None
+            self.value = Int(0)
             if len(tokens) > 1:
                 assert 1 == len(tokens) - 1
                 self.value = tokens[1]
+
+    def __repr__(self):
+        if self.length is None:
+            return f"<Integer {self.name}>"
+        else:
+            return f"<Integer {self.name}[{self.length}]>"
 
 class IrScanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -337,15 +334,16 @@ class EndProcedureInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
 
-class DataInstruction:
-    def __init__(self,  _s, _loc, tokens):
+class DataInstruction(Instruction):
+    def __init__(self, s, loc, tokens):
         assert len(tokens) == 1
+        Instruction.__init__(self, s, loc, tokens)
         self.name = tokens[0]
 
     def __repr__(self):
         return f"<Data {self.name}>"
 
-class EndDataInstruction:
+class EndDataInstruction(Instruction):
     def __repr__(self):
         return f"<EndData>"
 
@@ -464,9 +462,9 @@ class StaplFile:
                     pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
                            pp.Literal("]").suppress()))
         assignment = (variable + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(AssignmentInstruction)
-        boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl -
-                           pp.Opt(pp.Literal("=").suppress() - expression - pp.ZeroOrMore(pp.Literal(",").suppress() - expression)) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
-        call = (pp.CaselessKeyword("CALL") - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(CallInstruction)
+        boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl - pp.Opt(pp.Literal("=").suppress() -
+                           expression) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
+        call = (pp.CaselessKeyword("CALL").suppress() - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(CallInstruction)
         crc = (pp.CaselessKeyword("CRC").suppress() - pp.Word(pp.srange("[0-9a-fA-F]")) - pp.Literal(";").suppress()).set_parse_action(Crc)
         data = (pp.CaselessKeyword("DATA").suppress() - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(DataInstruction)
         drscan = (pp.CaselessKeyword("DRSCAN").suppress() - expression - pp.Literal(",").suppress() - expression -

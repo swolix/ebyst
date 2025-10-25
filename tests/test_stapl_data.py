@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import unittest
-from ebyst.stapl.data import Int, Bool, Any
+from ebyst.stapl.data import Int, Bool, Any, IntArray, BoolArray
 
 class TestCalc(unittest.TestCase):
     def test_bool(self):
@@ -148,6 +148,49 @@ class TestCalc(unittest.TestCase):
         self.assertNotEqual(Bool(1), Any(0))
         self.assertNotEqual(Int(1), Any(0))
         self.assertRaises(ValueError, lambda: Bool(1) == Any(2))
+
+    def test_int_array(self):
+        a = IntArray([1, 2, 3, 4])
+        self.assertEqual(len(a), 4)
+        self.assertEqual(a[0], Int(1))
+        self.assertEqual(a[1], Int(2))
+        self.assertEqual(a[2], Int(3))
+        self.assertEqual(a[3], Int(4))
+        self.assertIsInstance(a[0], Int)
+
+        b = a[1:2]
+        self.assertEqual(len(b), 2)
+        self.assertEqual(b[0], Int(2))
+        self.assertEqual(b[1], Int(3))
+
+        c = a[3:1]
+        self.assertEqual(len(c), 3)
+        self.assertEqual(c[0], Int(4))
+        self.assertEqual(c[1], Int(3))
+        self.assertEqual(c[2], Int(2))
+
+    def test_int_array(self):
+        a = BoolArray("101011")
+        self.assertEqual(len(a), 6)
+        self.assertEqual(a[0], Bool(1))
+        self.assertEqual(a[1], Bool(1))
+        self.assertEqual(a[2], Bool(0))
+        self.assertEqual(a[3], Bool(1))
+        self.assertEqual(a[4], Bool(0))
+        self.assertEqual(a[5], Bool(1))
+        self.assertIsInstance(a[0], Bool)
+
+        b = a[1:2]
+        self.assertEqual(len(b), 2)
+        self.assertEqual(b[0], Bool(1))
+        self.assertEqual(b[1], Bool(0))
+
+        c = a[3:0]
+        self.assertEqual(len(c), 4)
+        self.assertEqual(c[0], Bool(1))
+        self.assertEqual(c[1], Bool(0))
+        self.assertEqual(c[2], Bool(1))
+        self.assertEqual(c[2], Bool(1))
 
 if __name__ == '__main__':
     unittest.main()

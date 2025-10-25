@@ -19,11 +19,14 @@
 # SOFTWARE.
 import logging
 
-from .data import IntegerVariable, IntegerArrayVariable, BoolVariable, BoolArrayVariable, Evaluatable, Int, Bool, VariableScope
-from .stapl import (AssignmentInstruction, BooleanInstruction, CallInstruction, DataInstruction, EndDataInstruction,
-                    EndProcedureInstruction, ExitInstruction, ExportInstruction, ForInstruction, GotoInstruction,
-                    IfInstruction, IntegerInstruction, NextInstruction, PopInstruction, PrintInstruction,
-                    ProcedureInstruction, PushInstruction, StateInstruction, TRSTInstruction, WaitInstruction)
+from ..tap_controller import State
+from .data import Variable, Evaluatable, Int, IntArray, Bool, BoolArray, CheckedVariableScope, ArrayVariable
+from .stapl import (AssignmentInstruction, BooleanInstruction, CallInstruction, DataInstruction, DrScanInstruction,
+                    DrStopInstruction, EndDataInstruction, EndProcedureInstruction, ExitInstruction, ExportInstruction,
+                    ForInstruction, GotoInstruction, IfInstruction, IntegerInstruction, IrScanInstruction,
+                    IrStopInstruction, NextInstruction, PopInstruction, PostDrInstruction, PostIrInstruction,
+                    PreDrInstruction, PreIrInstruction, PrintInstruction, ProcedureInstruction,
+                    PushInstruction, StateInstruction, TRSTInstruction, WaitInstruction)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +40,7 @@ class StaplInterpreter:
             self.pc = pc
             self.procedure = procedure
             self.loop_stack = []
-            self.scope = VariableScope()
+            self.scope = CheckedVariableScope()
             self.stack = []
 
     def __init__(self, ctl, stapl):
@@ -53,6 +56,8 @@ class StaplInterpreter:
             assert self.state.pc < len(self.stapl.statements)
             instruction = self.stapl.statements[self.state.pc].instruction
             self.state.pc += 1
+
+        logger.debug(f"{instruction.line}: {instruction}")
 
         if isinstance(instruction, AssignmentInstruction):
             v = instruction.value.evaluate(self.state.scope)
@@ -74,20 +79,19 @@ class StaplInterpreter:
                 self.state.scope[instruction.variable].assign(v)
         elif isinstance(instruction, BooleanInstruction):
             if instruction.length is None:
-                self.state.scope[instruction.name] = var = BoolVariable()
-
-                if not instruction.value is None:
-                    v2 = instruction.value.evaluate(self.state.scope)
-                    logger.debug(f"Setting {instruction.name} to {v2}...")
-                    var.assign(v2)
+                if instruction.value is None:
+                    v = Bool(0)
+                else:
+                    v = instruction.value.evaluate(self.state.scope)
+                var = Variable(v)
             else:
-                self.state.scope[instruction.name] = var = BoolArrayVariable(instruction.length)
-
                 if not instruction.value is None:
-                    for i in range(instruction.length):
-                        v = instruction.value[i].evaluate(self.state.scope)
-                        logger.debug(f"Setting {instruction.name}[{i}] to {v}...")
-                        var[i].assign(v)
+                    v = instruction.value.evaluate()
+                else:
+                    v = BoolArray([0] * instruction.length)
+                var = ArrayVariable(v)
+            self.state.scope[instruction.name] = var
+            logger.debug(f"Setting {instruction.name} to {v}...")
         elif isinstance(instruction, CallInstruction):
             self.call_stack.append(self.state)
             self.state = StaplInterpreter.State(self.stapl.procedures[instruction.procedure], instruction.procedure)
@@ -116,8 +120,7 @@ class StaplInterpreter:
             step = instruction.step.evaluate(self.state.scope)
             end = instruction.end.evaluate(self.state.scope)
             self.state.loop_stack.append((instruction.var, step, end, self.state.pc))
-            self.state.scope[instruction.var] = var = IntegerVariable()
-            var.assign(start)
+            self.state.scope[instruction.var] = var = Variable(start)
         elif isinstance(instruction, GotoInstruction):
             try:
                 assert not self.state.procedure is None
@@ -130,21 +133,19 @@ class StaplInterpreter:
                 self.execute(instruction.instruction)
         elif isinstance(instruction, IntegerInstruction):
             if instruction.length is None:
-                self.state.scope[instruction.name] = var = IntegerVariable()
-
-                if not instruction.value is None:
-                    v2 = instruction.value.evaluate(self.state.scope)
-                    logger.debug(f"Setting {instruction.name} to {v2}...")
-                    var.assign(v2)
+                if instruction.value is None:
+                    v = Int(0)
+                else:
+                    v = instruction.value.evaluate(self.state.scope)
+                var = Variable(v)
             else:
-                self.state.scope[instruction.name] = var = IntegerArrayVariable(instruction.length)
-
+                v = IntArray([0] * instruction.length)
                 if not instruction.value is None:
                     for i in range(instruction.length):
-                        if not instruction.value[i] is None:
-                            v = instruction.value[i].evaluate(self.state.scope)
-                            logger.debug(f"Setting {instruction.name}[{i}] to {v}...")
-                            var[i].assign(v)
+                        v[i] = instruction.value[i].evaluate(self.state.scope)
+                var = ArrayVariable(v)
+            self.state.scope[instruction.name] = var
+            logger.debug(f"Setting {instruction.name} to {v}...")
         elif isinstance(instruction, NextInstruction):
             if len(self.state.loop_stack) == 0:
                 raise Exception("NEXT without FOR")
@@ -152,8 +153,9 @@ class StaplInterpreter:
             if instruction.var != var:
                 raise Exception(f"NEXT variable {instruction.var} doesn't match FOR variable {var}")
             var = self.state.scope[var]
-            var += step
-            if (Int(step) > 0 and var < end) or (Int(step) < 0 and var > end):
+            cur = var.evaluate() + step
+            var.assign(cur)
+            if (Int(step) > 0 and cur < end) or (Int(step) < 0 and cur > end):
                 self.state.pc = first_pc
         elif isinstance(instruction, PopInstruction):
             v = self.state.stack.pop()

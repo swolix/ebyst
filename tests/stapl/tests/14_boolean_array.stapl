@@ -12,10 +12,12 @@ NOTE "TEST" "0";
 NOTE "TEST" "1";
 NOTE "TEST" "1";
 
+NOTE "TEST" "1010";
+
 ACTION TEST = DO_TEST;
 
 PROCEDURE DO_TEST;
-    BOOLEAN array[4] = 1, 0, 1, 1;
+    BOOLEAN array[4] = #1011;
     EXPORT "TEST", array[3];
     EXPORT "TEST", array[2];
     EXPORT "TEST", array[0];
@@ -27,12 +29,15 @@ PROCEDURE DO_TEST;
     EXPORT "TEST", array[0];
     EXPORT "TEST", array[1];
 
-    BOOLEAN array2[4] = 1, 1, 0, 0;
+    BOOLEAN array2[4] = #1100;
     array[0..3] = array2[3..0];
     EXPORT "TEST", array[0];
     EXPORT "TEST", array[1];
     EXPORT "TEST", array[2];
     EXPORT "TEST", array[3];
+
+    BOOLEAN array3[4] = $a;
+    EXPORT "TEST", array3;
 ENDPROC;
 
 CRC 0;

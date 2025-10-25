@@ -17,40 +17,56 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-class Variable:
-    pass
+from bitarray import bitarray
 
 class VariableScope(dict):
-    def __setitem__(self, key: str, value: Variable) -> None:
-        assert isinstance(value, Variable)
-        return super().__setitem__(key, value)
+    pass
 
 class Evaluatable:
     def evaluate(self, scope=VariableScope()):
         raise NotImplementedError()
 
-class Literal(Evaluatable):
-    def __init__(self, s):
-        if isinstance(s, int):
-            self.v = int(s)
-        elif s.startswith("#"):
-            self.v = int(s[1:], 2)
-        elif s.startswith("$"):
-            self.v = int(s[1:], 16)
-        elif s.startswith("@"):
-            self.v = 0 # TODO
-        else:
-            assert False
+class Array:
+    pass
+
+class Variable(Evaluatable):
+    def __init__(self, v):
+        assert isinstance(v, Evaluatable)
+        self.v = v
+
+    def assign(self, v):
+        if not isinstance(self.v, Any):
+            v = type(self.v)(v)
+        assert isinstance(v, Evaluatable)
+        self.v = v
 
     def evaluate(self, scope=VariableScope()):
-        if self.v == 0 or self.v == 1:
-            return Any(self.v)
-        else:
-            return Int(self.v)
+        return self.v.evaluate(scope)
 
-    def __str__(self):
-        return str(self.v)
+class ArrayVariable(Variable):
+    def __init__(self, v):
+        assert isinstance(v, Evaluatable)
+        len(v)
+        self.v = v
+
+    def assign(self, offset_or_v, v=None):
+        if v is None:
+            offset = 0
+            v = offset_or_v
+        else:
+            offset = int(offset_or_v.evaluate())
+        if isinstance(v, Array):
+            self.v[offset:offset+len(v)] = v
+        else:
+            self.v[offset] = v
+
+    def evaluate(self, scope=VariableScope()):
+        return self.v.evaluate(scope)
+
+class CheckedVariableScope(VariableScope):
+    def __setitem__(self, key: str, value: Variable) -> None:
+        assert isinstance(value, Variable)
+        return super().__setitem__(key, value)
 
 class Int(Evaluatable):
     def __init__(self, v):
@@ -136,6 +152,8 @@ class Bool(Evaluatable):
             self.v = int(v)
         elif (isinstance(v, Any) or isinstance(v, Bool)) and v.v in (0, 1):
             self.v = v.v
+        elif isinstance(v, bitarray) and len(v) == 1:
+            self.v = 1 if v[0] else 0
         else:
             raise ValueError(f"Could not convert {repr(v)} to Bool")
 
@@ -219,6 +237,60 @@ class Any(Int):
     def clone(self):
         return Any(self)
 
+class IntArray(list, Evaluatable, Array):
+    def __getitem__(self, i):
+        if isinstance(i, int):
+            return Int(super().__getitem__(i))
+        elif isinstance(i, slice):
+            assert i.step is None
+
+            if i.start <= i.stop:
+                return IntArray(super().__getitem__(slice(i.start, i.stop+1)))
+            else:
+                return IntArray(super().__getitem__(slice(i.start, i.stop-1 if i.stop > 0 else None, -1)))
+        else:
+            assert False
+
+    def evaluate(self, scope=VariableScope()):
+        return self
+
+class BoolArray(Evaluatable, Array):
+    def __init__(self, v):
+        self.v = bitarray(v, endian="big")
+        if isinstance(v, str):
+            self.v.reverse()
+
+    def __getitem__(self, i):
+        if isinstance(i, int):
+            return Bool(self.v[i])
+        elif isinstance(i, slice):
+            assert i.step is None
+
+            if i.start <= i.stop:
+                return BoolArray(self.v.__getitem__(slice(i.start, i.stop+1)))
+            else:
+                x = self.v.__getitem__(slice(i.stop, i.start+1))
+                x.reverse()
+                return BoolArray(x)
+        else:
+            assert False
+
+
+    def __setitem__(self, i, v):
+        self.v[i] = v.v
+
+    def __len__(self):
+        return len(self.v)
+
+    def __str__(self):
+        return self.v.to01()
+
+    def __repr__(self):
+        return repr(self.v)
+
+    def evaluate(self, scope=VariableScope()):
+        return self
+
 class String(Evaluatable):
     def __init__(self, v):
         self.v = str(v)
@@ -228,77 +300,3 @@ class String(Evaluatable):
 
     def __repr__(self):
         return f"String({self.v})"
-
-class Slice:
-    def __init__(self, array, first, last):
-        self.array = array
-        self.first = first
-        self.last = last
-
-    def __len__(self):
-        return self.last - self.first + 1 if self.last > self.first else self.first - self.last + 1
-
-    def __iter__(self):
-        if self.first > self.last:
-            for i in range(self.first, self.last-1, -1):
-                yield self.array[i]
-        else:
-            for i in range(self.first, self.last+1):
-                yield self.array[i]
-
-    def __repr__(self):
-        return f"Slice({len(self)})"
-
-class IntegerVariable(Int, Variable):
-    def __init__(self):
-        self.v = None
-    
-    def assign(self, v):
-        Int.__init__(self, v)
-
-    def __iadd__(self, other):
-        self.v += Int(other).v
-        return self
-
-class IntegerArrayVariable(list, Variable, Evaluatable):
-    def __init__(self, length):
-        for i in range(length): self.append(IntegerVariable())
-
-    def assign(self, index, v):
-        if isinstance(v, Slice):
-            for i, v in enumerate(v):
-                self[int(index+i)].assign(v)
-        else:
-            self[int(index)].assign(v)
-
-    def slice(self, first, last):
-        return Slice(self, first, last)
-
-class BoolVariable(Bool, Variable):
-    def __init__(self):
-        self.v = None
-    
-    def assign(self, v):
-        if isinstance(v, Bool):
-            self.v = v
-        elif isinstance(v, Any):
-            self.v = Bool(v)
-        else:
-            raise ValueError(f"Cannot assign {repr(v)} to Bool")
-
-    def evaluate(self, scope=VariableScope()):
-        return self.v
-
-class BoolArrayVariable(list, Variable, Evaluatable):
-    def __init__(self, length):
-        for i in range(length): self.append(BoolVariable())
-
-    def assign(self, index, v):
-        if isinstance(v, Slice):
-            for i, v in enumerate(v):
-                self[int(index+i)].assign(v)
-        else:
-            self[int(index)].assign(v)
-
-    def slice(self, first, last):
-        return Slice(self, first, last)

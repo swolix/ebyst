@@ -18,7 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import pyparsing as pp
-from .data import Evaluatable, Literal, Int, Bool, Any, String, VariableScope
+from .data import Evaluatable, Int, Bool, BoolArray, Any, String, VariableScope
+from bitarray import bitarray
+from bitarray.util import hex2ba
 
 class VariableRef(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -45,18 +47,45 @@ class VariableRef(Evaluatable):
             raise KeyError(f"Variable {self.name} not defined")
         else:
             if not self.slice_end is None:
-                return variable.slice(int(self.slice_start.evaluate(scope)), int(self.slice_end.evaluate(scope)))
+                return variable.evaluate(scope)[slice(int(self.slice_start.evaluate(scope)), int(self.slice_end.evaluate(scope)))]
             elif not self.slice_start is None:
-                return variable[int(self.slice_start.evaluate(scope))].evaluate(scope)
+                return variable.evaluate(scope)[int(self.slice_start.evaluate(scope))].evaluate(scope)
             else:
                 return variable.evaluate(scope)
 
     def __str__(self):
-        return self.name
+        if not self.slice_end is None:
+            return f"{self.name}[{self.slice_start.evaluate()}..{self.slice_end.evaluate()}]"
+        elif not self.slice_start is None:
+            return f"{self.name}[{self.slice_start.evaluate()}]"
+        else:
+            return self.name
 
-class LiteralParser(Literal):
+class BoolArrayParser:
     def __init__(self, _s, _loc, tokens):
-        Literal.__init__(self, tokens[0])
+        assert len(tokens) == 1
+        if tokens[0][0] == '#':
+            self.v = bitarray(tokens[0][1:])
+        elif tokens[0][0] == '$':
+            self.v = hex2ba(tokens[0][1:])
+        elif tokens[0][0] == '@':
+            raise NotImplementedError()
+        else:
+            assert False
+
+    def evaluate(self, scope=VariableScope()):
+        return BoolArray(self.v)
+
+class IntParser:
+    def __init__(self, _s, _loc, tokens):
+        assert len(tokens) == 1
+        self.v = int(tokens[0])
+
+    def evaluate(self, scope=VariableScope()):
+        if self.v == 0 or self.v == 1:
+            return Any(self.v)
+        else:
+            return Int(self.v)
 
 class Function(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -155,11 +184,11 @@ class Expression(Evaluatable):
         variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
                     pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
                            pp.Literal("]").suppress())).set_parse_action(VariableRef)
-        literal = (pp.MatchFirst((pp.pyparsing_common.integer,
+        literal = pp.pyparsing_common.integer.set_parse_action(IntParser) | (pp.MatchFirst((
                                   pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),
                                   pp.Combine(pp.Literal("$") - pp.OneOrMore(pp.Word(pp.srange("[0-9a-fA-F]"))), adjacent=False),
-                                  pp.Regex(r"@[^;]*")))).set_parse_action(LiteralParser)
-        function = (pp.Group(pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$") + 
+                                  pp.Regex(r"@[^;]*")))).set_parse_action(BoolArrayParser)
+        function = (pp.Group(pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$") +
                              pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
         expression1 = (function | variable | literal).set_parse_action(cls)
