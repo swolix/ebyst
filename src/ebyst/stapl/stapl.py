@@ -120,7 +120,7 @@ class DrStopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 1
-        self.stae = tokens[0].state
+        self.state = tokens[0].state
 
 class ExitInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -184,7 +184,7 @@ class IrStopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 1
-        self.stae = tokens[0].state
+        self.state = tokens[0].state
 
 class PopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):

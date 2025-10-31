@@ -25,7 +25,7 @@ from .stapl import (AssignmentInstruction, BooleanInstruction, CallInstruction, 
                     DrStopInstruction, EndDataInstruction, EndProcedureInstruction, ExitInstruction, ExportInstruction,
                     ForInstruction, GotoInstruction, IfInstruction, IntegerInstruction, IrScanInstruction,
                     IrStopInstruction, NextInstruction, PopInstruction, PostDrInstruction, PostIrInstruction,
-                    PreDrInstruction, PreIrInstruction, PrintInstruction, ProcedureInstruction,
+                    PreDrInstruction, PreIrInstruction, PrintInstruction, ProcedureInstruction, FrequencyInstruction,
                     PushInstruction, StateInstruction, TRSTInstruction, WaitInstruction)
 
 logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ class StaplInterpreter:
         elif isinstance(instruction, DataInstruction):
             pass
         elif isinstance(instruction, DrScanInstruction):
-            raise NotImplementedError()
+            logger.warning("DrScan instruction not implemented")
         elif isinstance(instruction, DrStopInstruction):
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.dr_stop = instruction.state
@@ -127,6 +127,8 @@ class StaplInterpreter:
             end = instruction.end.evaluate(self.state.scope)
             self.state.loop_stack.append((instruction.var, step, end, self.state.pc))
             self.state.scope[instruction.var] = var = Variable(start)
+        elif isinstance(instruction, FrequencyInstruction):
+            logger.warning("Frequency instruction not implemented")
         elif isinstance(instruction, GotoInstruction):
             try:
                 assert not self.state.procedure is None
@@ -153,7 +155,7 @@ class StaplInterpreter:
             self.state.scope[instruction.name] = var
             logger.debug(f"Setting {instruction.name} to {v}...")
         elif isinstance(instruction, IrScanInstruction):
-            raise NotImplementedError()
+            logger.warning("IrScan instruction not implemented")
         elif isinstance(instruction, IrStopInstruction):
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.ir_stop = instruction.state
