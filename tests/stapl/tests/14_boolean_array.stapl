@@ -1,11 +1,11 @@
 NOTE "TEST" "1";
-NOTE "TEST" "1";
-NOTE "TEST" "1";
-NOTE "TEST" "0";
-NOTE "TEST" "0";
-NOTE "TEST" "0";
 NOTE "TEST" "0";
 NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
 
 NOTE "TEST" "0";
 NOTE "TEST" "0";
@@ -13,31 +13,44 @@ NOTE "TEST" "1";
 NOTE "TEST" "1";
 
 NOTE "TEST" "1010";
+NOTE "TEST" "0000010011010010";
+NOTE "TEST" "0000010011010010";
+NOTE "TEST" "0100101100100000";
 
 ACTION TEST = DO_TEST;
 
 PROCEDURE DO_TEST;
     BOOLEAN array[4] = #1011;
+    `print array;
     EXPORT "TEST", array[3];
     EXPORT "TEST", array[2];
-    EXPORT "TEST", array[0];
     EXPORT "TEST", array[1];
-    array[2] = array[1];
+    EXPORT "TEST", array[0];
+    array[1] = array[2];
     EXPORT "TEST", array[1];
     EXPORT "TEST", array[2];
-    array[0..1] = array[2..3];
-    EXPORT "TEST", array[0];
+    array[1..0] = array[3..2];
     EXPORT "TEST", array[1];
+    EXPORT "TEST", array[0];
 
     BOOLEAN array2[4] = #1100;
     array[0..3] = array2[3..0];
-    EXPORT "TEST", array[0];
-    EXPORT "TEST", array[1];
-    EXPORT "TEST", array[2];
     EXPORT "TEST", array[3];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[0];
 
     BOOLEAN array3[4] = $a;
     EXPORT "TEST", array3;
+
+    INTEGER a = 1234;
+    BOOLEAN array4[16];
+    array4 = BOOL(a);
+    EXPORT "TEST", array4;
+    array4[15..0] = BOOL(a);
+    EXPORT "TEST", array4;
+    array4[0..15] = BOOL(a);
+    EXPORT "TEST", array4;
 ENDPROC;
 
 CRC 0;

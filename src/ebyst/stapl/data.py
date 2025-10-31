@@ -49,19 +49,22 @@ class ArrayVariable(Variable):
         len(v)
         self.v = v
 
-    def assign(self, offset_or_v, v=None):
+    def assign(self, pos_or_v, v=None):
         if v is None:
-            offset = 0
-            v = offset_or_v
+            slice_ = None
+            v = pos_or_v
+        elif isinstance(pos_or_v, int) or isinstance(pos_or_v, slice):
+            slice_ = pos_or_v
         else:
-            offset = int(offset_or_v.evaluate())
-        if isinstance(v, Array):
-            self.v[offset:offset+len(v)] = v
-        else:
-            self.v[offset] = v
+            assert False
+
+        self.v.__setitem__(slice_, v)
 
     def evaluate(self, scope=VariableScope()):
         return self.v.evaluate(scope)
+
+    def __str__(self):
+        return str(self.v)
 
 class CheckedVariableScope(VariableScope):
     def __setitem__(self, key: str, value: Variable) -> None:
@@ -238,6 +241,15 @@ class Any(Int):
         return Any(self)
 
 class IntArray(list, Evaluatable, Array):
+    def __init__(self, init=[]):
+        for x in init:
+            if isinstance(x, int):
+                self.append(Int(x))
+            elif isinstance(x, Int):
+                self.append(x)
+            else:
+                raise ValueError(f"Can't convert {x} to Int")
+
     def __getitem__(self, i):
         if isinstance(i, int):
             return Int(super().__getitem__(i))
@@ -249,14 +261,35 @@ class IntArray(list, Evaluatable, Array):
             else:
                 return IntArray(super().__getitem__(slice(i.start, i.stop-1 if i.stop > 0 else None, -1)))
         else:
-            assert False
+            raise TypeError()
+
+    def __setitem__(self, i, v):
+        if i is None:
+            if not isinstance(v, IntArray):
+                raise ValueError(f"Can't assign {type(v)} to integer array")
+            super().__setitem__(slice(0, len(self)), v)
+        elif isinstance(i, int):
+            if not isinstance(v, Int):
+                raise ValueError(f"Can't assign {v} to integer array element")
+            super().__setitem__(i, v)
+        elif isinstance(i, slice):
+            assert i.step is None
+            if not isinstance(v, IntArray):
+                raise ValueError(f"Can't assign {type(v)} to integer array")
+
+            if i.start <= i.stop:
+                super().__setitem__(slice(i.start, i.stop+1), v)
+            else:
+                super().__setitem__(slice(i.start, i.stop-1 if i.stop > 0 else None, -1), v)
+        else:
+            raise TypeError()
 
     def evaluate(self, scope=VariableScope()):
         return self
 
 class BoolArray(Evaluatable, Array):
     def __init__(self, v):
-        self.v = bitarray(v, endian="big")
+        self.v = bitarray(v)
         if isinstance(v, str):
             self.v.reverse()
 
@@ -266,30 +299,61 @@ class BoolArray(Evaluatable, Array):
         elif isinstance(i, slice):
             assert i.step is None
 
-            if i.start <= i.stop:
-                return BoolArray(self.v.__getitem__(slice(i.start, i.stop+1)))
+            if i.start < i.stop:
+                x = self.v.__getitem__(slice(i.stop, i.start-1 if i.start > 0 else None, -1))
+                return BoolArray(x)
             else:
                 x = self.v.__getitem__(slice(i.stop, i.start+1))
-                x.reverse()
                 return BoolArray(x)
         else:
             assert False
 
-
     def __setitem__(self, i, v):
-        self.v[i] = v.v
+        if i is None:
+            self.v.setall(0)
+            self.__setitem__(slice(min(len(v), len(self))-1, 0), v)
+        elif isinstance(i, int):
+            if not isinstance(v, Bool):
+                raise ValueError(f"Can't assign {v} to boolean array element")
+            self.v.__setitem__(i, v.v)
+        elif isinstance(i, slice):
+            assert i.step is None
+            if not isinstance(v, BoolArray):
+                raise ValueError(f"Can't assign {type(v)} to boolean array")
+
+            slice_length = i.stop - i.start + 1 if i.stop > i.start else i.start - i.stop + 1
+            if len(v) > slice_length:
+                v = BoolArray(v.v[:slice_length])
+            elif len(v) < slice_length:
+                v = BoolArray(v.v + bitarray("0") * (slice_length - len(v)))
+
+            if i.start < i.stop:
+                self.v.__setitem__(slice(i.stop, i.start-1 if i.start > 0 else None, -1), v.v)
+            else:
+                self.v.__setitem__(slice(i.stop, i.start+1), v.v)
+        else:
+            raise TypeError()
+
+    def __eq__(self, other):
+        if not isinstance(other, BoolArray): return False
+        return self.v == other.v
 
     def __len__(self):
         return len(self.v)
 
     def __str__(self):
-        return self.v.to01()
+        return self.v.to01()[::-1]
 
     def __repr__(self):
         return repr(self.v)
 
     def evaluate(self, scope=VariableScope()):
         return self
+
+    def reverse(self):
+        x = BoolArray(self.v)
+        x.v.reverse()
+        return x
 
 class String(Evaluatable):
     def __init__(self, v):

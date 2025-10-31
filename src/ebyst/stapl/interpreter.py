@@ -65,15 +65,12 @@ class StaplInterpreter:
             v = instruction.value.evaluate(self.state.scope)
             if not instruction.last is None:
                 assert not instruction.first is None
-                first = instruction.first.evaluate()
-                last = instruction.last.evaluate()
-                length = last - first + 1 if last > first else first - last + 1
-                if last - first + 1 != len(v):
-                    raise ValueError(f"Can't assign slice of length {len(v)} to slice of length {length}")
-                logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
-                self.state.scope[instruction.variable].assign(first, v)
+                first = int(instruction.first.evaluate())
+                last = int(instruction.last.evaluate())
+                logger.debug(f"Setting {instruction.variable}[{first}:{last}] to {v}...")
+                self.state.scope[instruction.variable].assign(slice(first, last), v)
             elif not instruction.first is None:
-                first = instruction.first.evaluate()
+                first = int(instruction.first.evaluate())
                 logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
                 self.state.scope[instruction.variable].assign(first, v)
             else:
@@ -177,15 +174,12 @@ class StaplInterpreter:
             v = self.state.stack.pop()
             if not instruction.last is None:
                 assert not instruction.first is None
-                first = instruction.first.evaluate()
-                last = instruction.last.evaluate()
-                length = last - first + 1 if last > first else first - last + 1
-                if last - first + 1 != len(v):
-                    raise ValueError(f"Can't assign slice of length {len(v)} to slice of length {length}")
+                first = int(instruction.first.evaluate())
+                last = int(instruction.last.evaluate())
                 logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
-                self.state.scope[instruction.variable].assign(first, v)
+                self.state.scope[instruction.variable].assign(slice(first, last), v)
             elif not instruction.first is None:
-                first = instruction.first.evaluate()
+                first = int(instruction.first.evaluate())
                 logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
                 self.state.scope[instruction.variable].assign(first, v)
             else:

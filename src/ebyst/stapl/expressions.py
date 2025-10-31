@@ -20,7 +20,7 @@
 import pyparsing as pp
 from .data import Evaluatable, Int, Bool, BoolArray, Any, String, VariableScope
 from bitarray import bitarray
-from bitarray.util import hex2ba
+from bitarray.util import hex2ba, int2ba, ba2int
 
 class VariableRef(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -66,8 +66,10 @@ class BoolArrayParser:
         assert len(tokens) == 1
         if tokens[0][0] == '#':
             self.v = bitarray(tokens[0][1:])
+            self.v.reverse()
         elif tokens[0][0] == '$':
             self.v = hex2ba(tokens[0][1:])
+            self.v.reverse()
         elif tokens[0][0] == '@':
             raise NotImplementedError()
         else:
@@ -96,9 +98,10 @@ class Function(Evaluatable):
 
     def evaluate(self, scope={}):
         if self.function == "BOOL":
-            return Bool(int(self.v.evaluate(scope)))
+            ba = int2ba(int(self.v.evaluate(scope)), length=32, endian='little')
+            return BoolArray(ba)
         elif self.function == "INT":
-            return Int(int(self.v.evaluate(scope)))
+            return Int(ba2int(self.v.evaluate(scope).v))
         elif self.function == "CHR$":
             return String(chr(Int(self.v.evaluate(scope)).v))
         else:
@@ -188,7 +191,7 @@ class Expression(Evaluatable):
                                   pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),
                                   pp.Combine(pp.Literal("$") - pp.OneOrMore(pp.Word(pp.srange("[0-9a-fA-F]"))), adjacent=False),
                                   pp.Regex(r"@[^;]*")))).set_parse_action(BoolArrayParser)
-        function = (pp.Group(pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$") +
+        function = (pp.Group((pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$")) +
                              pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
         expression0 = (function | variable | literal).set_parse_action(cls)

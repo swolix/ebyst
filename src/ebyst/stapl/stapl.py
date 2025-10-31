@@ -105,7 +105,7 @@ class BooleanInstruction(Instruction):
         if len(tokens) > 1:
             self.value = tokens[1]
         else:
-            self.value = 0
+            self.value = None
 
 class CallInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
