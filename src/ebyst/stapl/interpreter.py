@@ -277,5 +277,10 @@ class StaplInterpreter:
                 self._run_procedure(self.stapl.procedures[procedure], procedure)
             except KeyError:
                 raise KeyError(f"Procedure {procedure} not found")
+            except StaplExitCode as e:
+                if e.code == 0:
+                    break
+                else:
+                    raise
         logger.info(f"Action completed")
 
