@@ -179,7 +179,7 @@ class StaplInterpreter:
                 raise Exception(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
             if len(in_array) != length:
                 in_array = in_array[length-1:0]
-            out_array = self.ctl.ir_scan(in_array.to_bitarray(), self.dr_stop)
+            out_array = self.ctl.ir_scan(in_array.to_bitarray(), self.ir_stop)
             out_array = BoolArray(out_array)
             if not instruction.capture_array is None:
                 self._assign(instruction.capture_array, out_array)
