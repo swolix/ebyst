@@ -55,8 +55,8 @@ class StaplInterpreter:
     def _assign(self, variable, value):
         if not variable.last is None:
             assert not variable.first is None
-            first = int(variable.first.evaluate())
-            last = int(variable.last.evaluate())
+            first = int(variable.first.evaluate(self.state.scope))
+            last = int(variable.last.evaluate(self.state.scope))
             logger.debug(f"Setting {variable.name}[{first}:{last}] to {value}...")
             self.state.scope[variable.name].assign(slice(first, last), value)
         elif not variable.first is None:
