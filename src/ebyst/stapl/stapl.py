@@ -60,6 +60,23 @@ class VariableDecl:
         else:
             return f"<{self.name}[{self.length}]>"
 
+class Variable:
+    def __init__(self,  s, loc, tokens):
+        if len(tokens) == 1:
+            self.name = tokens[0]
+            self.first = None
+            self.last = None
+        elif len(tokens) == 2:
+            self.name = tokens[0]
+            self.first = tokens[1]
+            self.last = None
+        elif len(tokens) == 3:
+            self.name = tokens[0]
+            self.first = tokens[1]
+            self.last = tokens[2]
+        else:
+            assert False
+
 class Instruction:
     def __init__(self,  s, loc, tokens):
         self.line = pp.lineno(loc, s)
@@ -80,19 +97,7 @@ class AssignmentInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         if len(tokens) == 2:
             self.variable = tokens[0]
-            self.first = None
-            self.last = None
             self.value = tokens[1]
-        elif len(tokens) == 3:
-            self.variable = tokens[0]
-            self.first = tokens[1]
-            self.last = None
-            self.value = tokens[2]
-        elif len(tokens) == 4:
-            self.variable = tokens[0]
-            self.first = tokens[1]
-            self.last = tokens[2]
-            self.value = tokens[3]
         else:
             print(tokens)
             assert False
@@ -210,16 +215,6 @@ class PopInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         if len(tokens) == 1:
             self.variable = tokens[0]
-            self.first = None
-            self.last = None
-        elif len(tokens) == 2:
-            self.variable = tokens[0]
-            self.first = tokens[1]
-            self.last = None
-        elif len(tokens) == 3:
-            self.variable = tokens[0]
-            self.first = tokens[1]
-            self.last = tokens[2]
         else:
             print(tokens)
             assert False
@@ -512,7 +507,7 @@ class StaplFile:
                   pp.Literal(";").suppress()).set_parse_action(Action)
         variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
                     pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
-                           pp.Literal("]").suppress()))
+                           pp.Literal("]").suppress())).set_parse_action(Variable)
         assignment = (variable + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(AssignmentInstruction)
         boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl - pp.Opt(pp.Literal("=").suppress() -
                            expression) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)

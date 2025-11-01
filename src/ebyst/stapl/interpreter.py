@@ -52,6 +52,21 @@ class StaplInterpreter:
         self.ir_stop = State.RUN_TEST_IDLE
         self.dr_stop = State.RUN_TEST_IDLE
 
+    def _assign(self, variable, value):
+        if not variable.last is None:
+            assert not variable.first is None
+            first = int(variable.first.evaluate())
+            last = int(variable.last.evaluate())
+            logger.debug(f"Setting {variable.name}[{first}:{last}] to {value}...")
+            self.state.scope[variable.name].assign(slice(first, last), value)
+        elif not variable.first is None:
+            first = int(variable.first.evaluate())
+            logger.debug(f"Setting {variable.name}[{first}] to {value}...")
+            self.state.scope[variable.name].assign(first, value)
+        else:
+            logger.debug(f"Setting {variable.name} to {value}...")
+            self.state.scope[variable.name].assign(value)
+
     def execute(self, instruction=None):
         assert not self.state is None
         if instruction is None:
@@ -62,20 +77,7 @@ class StaplInterpreter:
         logger.debug(f"{instruction.line}: {instruction}")
 
         if isinstance(instruction, AssignmentInstruction):
-            v = instruction.value.evaluate(self.state.scope)
-            if not instruction.last is None:
-                assert not instruction.first is None
-                first = int(instruction.first.evaluate())
-                last = int(instruction.last.evaluate())
-                logger.debug(f"Setting {instruction.variable}[{first}:{last}] to {v}...")
-                self.state.scope[instruction.variable].assign(slice(first, last), v)
-            elif not instruction.first is None:
-                first = int(instruction.first.evaluate())
-                logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
-                self.state.scope[instruction.variable].assign(first, v)
-            else:
-                logger.debug(f"Setting {instruction.variable} to {v}...")
-                self.state.scope[instruction.variable].assign(v)
+            self._assign(instruction.variable, instruction.value.evaluate(self.state.scope))
         elif isinstance(instruction, BooleanInstruction):
             if instruction.length is None:
                 if instruction.value is None:
@@ -179,19 +181,7 @@ class StaplInterpreter:
                 self.state.pc = first_pc
         elif isinstance(instruction, PopInstruction):
             v = self.state.stack.pop()
-            if not instruction.last is None:
-                assert not instruction.first is None
-                first = int(instruction.first.evaluate())
-                last = int(instruction.last.evaluate())
-                logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
-                self.state.scope[instruction.variable].assign(slice(first, last), v)
-            elif not instruction.first is None:
-                first = int(instruction.first.evaluate())
-                logger.debug(f"Setting {instruction.variable}[{first}] to {v}...")
-                self.state.scope[instruction.variable].assign(first, v)
-            else:
-                logger.debug(f"Setting {instruction.variable} to {v}...")
-                self.state.scope[instruction.variable].assign(v)
+            self._assign(instruction.variable, v)
         elif isinstance(instruction, PrintInstruction):
             s = ""
             for part in instruction.parts:
