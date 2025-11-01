@@ -107,8 +107,14 @@ class Checker:
             assert False
 
     def ir_scan(self, ir, end_state):
-        self.check(f"IR SCAN {ir}")
+        self.check(f"IR SCAN {ir.to01()[::-1]}")
         self.enter_state(end_state)
+        return ir
+
+    def dr_scan(self, dr, end_state):
+        self.check(f"DR SCAN {dr.to01()[::-1]}")
+        self.enter_state(end_state)
+        return dr
 
     def wait(self, cycles, usec):
         self.check(f"WAIT {cycles} CYCLES, {usec} USEC")

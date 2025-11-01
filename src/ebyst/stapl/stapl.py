@@ -131,7 +131,7 @@ class ScanInstruction(Instruction):
             self.capture_array = None
         if len(tokens) > i and tokens[i].upper() == "COMPARE":
             self.compare_array = tokens[i+1]
-            self.mask_array = tokens[i+2]
+            self.compare_mask_array = tokens[i+2]
             self.compare_result = tokens[i+3]
             i += 4
         else:
@@ -515,9 +515,9 @@ class StaplFile:
         crc = (pp.CaselessKeyword("CRC").suppress() - pp.Word(pp.srange("[0-9a-fA-F]")) - pp.Literal(";").suppress()).set_parse_action(Crc)
         data = (pp.CaselessKeyword("DATA").suppress() - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(DataInstruction)
         drscan = (pp.CaselessKeyword("DRSCAN").suppress() - expression - pp.Literal(",").suppress() - expression -
-                          pp.Opt(pp.Literal(",").suppress() + pp.CaselessKeyword("CAPTURE") - expression) -
+                          pp.Opt(pp.Literal(",").suppress() + pp.CaselessKeyword("CAPTURE") - variable) -
                           pp.Opt(pp.Literal(",").suppress() - pp.CaselessKeyword("COMPARE") - expression -
-                                 pp.Literal(",").suppress() - expression + pp.Literal(",").suppress() - expression) -
+                                 pp.Literal(",").suppress() - expression + pp.Literal(",").suppress() - variable) -
                           pp.Literal(";").suppress()).set_parse_action(DrScanInstruction)
         drstop = (pp.CaselessKeyword("DRSTOP").suppress() - state_name - pp.Suppress(pp.Literal(";"))).set_parse_action(DrStopInstruction)
         end_data = (pp.CaselessKeyword("ENDDATA").suppress() - pp.Literal(";").suppress()).set_parse_action(EndDataInstruction)
@@ -533,11 +533,11 @@ class StaplFile:
         if_ = (pp.CaselessKeyword("IF").suppress() - expression - pp.CaselessKeyword("THEN").suppress() - instruction).set_parse_action(IfInstruction)
         integer = (pp.CaselessKeyword("INTEGER").suppress() - variable_decl -
                            pp.Opt(pp.Literal("=").suppress() - expression - pp.ZeroOrMore(pp.Literal(",").suppress() - expression)) - pp.Literal(";").suppress()).set_parse_action(IntegerInstruction)
-        irscan = (pp.CaselessKeyword("IRSCAN").suppress() - expression + pp.Literal(",").suppress() - expression -
-                          pp.Opt(pp.Literal(",").suppress() - pp.CaselessKeyword("CAPTURE") - expression) -
+        irscan = (pp.CaselessKeyword("IRSCAN").suppress() - expression - pp.Literal(",").suppress() - expression -
+                          pp.Opt(pp.Literal(",").suppress() + pp.CaselessKeyword("CAPTURE") - variable) -
                           pp.Opt(pp.Literal(",").suppress() - pp.CaselessKeyword("COMPARE") - expression -
-                                 pp.Literal(",").suppress() - expression - pp.Literal(",").suppress() - expression) -
-                          pp.Suppress(pp.Literal(";"))).set_parse_action(IrScanInstruction)
+                                 pp.Literal(",").suppress() - expression + pp.Literal(",").suppress() - variable) -
+                          pp.Literal(";").suppress()).set_parse_action(IrScanInstruction)
         irstop = (pp.CaselessKeyword("IRSTOP").suppress() - state_name - pp.Suppress(pp.Literal(";"))).set_parse_action(IrStopInstruction)
         next =  (pp.CaselessKeyword("NEXT").suppress() - identifier - pp.Literal(";").suppress()).set_parse_action(NextInstruction)
         note = (pp.CaselessKeyword("NOTE").suppress() - pp.QuotedString("\"") - pp.QuotedString("\"") - pp.Literal(";").suppress()).set_parse_action(Note)

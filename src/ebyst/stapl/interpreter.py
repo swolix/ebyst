@@ -99,7 +99,20 @@ class StaplInterpreter:
         elif isinstance(instruction, DataInstruction):
             pass
         elif isinstance(instruction, DrScanInstruction):
-            logger.warning("DrScan instruction not implemented")
+            in_array = instruction.data_array.evaluate(self.state.scope)
+            if len(in_array) != instruction.length.evaluate(self.state.scope):
+                raise Exception(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
+            out_array = self.ctl.dr_scan(in_array.to_bitarray(), self.dr_stop)
+            out_array = BoolArray(out_array)
+            if not instruction.capture_array is None:
+                self._assign(instruction.capture_array, out_array)
+            if not instruction.compare_array is None:
+                compare_array = instruction.compare_array.evaluate()
+                compare_mask_array = instruction.compare_mask_array.evaluate()
+                if out_array & compare_mask_array == compare_array & compare_mask_array:
+                    self._assign(instruction.compare_result, Bool(1))
+                else:
+                    self._assign(instruction.compare_result, Bool(0))
         elif isinstance(instruction, DrStopInstruction):
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.dr_stop = instruction.state
@@ -160,9 +173,17 @@ class StaplInterpreter:
             in_array = instruction.data_array.evaluate(self.state.scope)
             if len(in_array) != instruction.length.evaluate(self.state.scope):
                 raise Exception(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
-            if not instruction.capture_array is None or not instruction.compare_array is None:
-                raise NotImplementedError()
-            self.ctl.ir_scan(in_array, self.ir_stop)
+            out_array = self.ctl.ir_scan(in_array.to_bitarray(), self.ir_stop)
+            out_array = BoolArray(out_array)
+            if not instruction.capture_array is None:
+                self._assign(instruction.capture_array, out_array)
+            if not instruction.compare_array is None:
+                compare_array = instruction.compare_array.evaluate()
+                compare_mask_array = instruction.compare_mask_array.evaluate()
+                if out_array & compare_mask_array == compare_array & compare_mask_array:
+                    self._assign(instruction.compare_result, Bool(1))
+                else:
+                    self._assign(instruction.compare_result, Bool(0))
         elif isinstance(instruction, IrStopInstruction):
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.ir_stop = instruction.state

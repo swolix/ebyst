@@ -355,6 +355,12 @@ class BoolArray(Evaluatable, Array):
         x.v.reverse()
         return x
 
+    def to_bitarray(self):
+        return self.v
+
+    def __and__(self, other):
+        return self.v & other.v
+
 class String(Evaluatable):
     def __init__(self, v):
         self.v = str(v)
