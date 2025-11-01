@@ -196,10 +196,12 @@ class StaplInterpreter:
             if instruction.var != var:
                 raise Exception(f"NEXT variable {instruction.var} doesn't match FOR variable {var}")
             var = self.state.scope[var]
-            cur = var.evaluate() + step
-            var.assign(cur)
+            cur = var.evaluate()
             if (Int(step) > 0 and cur < end) or (Int(step) < 0 and cur > end):
+                var.assign(cur + step)
                 self.state.pc = first_pc
+            else:
+                self.state.loop_stack.pop()
         elif isinstance(instruction, PopInstruction):
             v = self.state.stack.pop()
             self._assign(instruction.variable, v)
