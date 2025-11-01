@@ -155,7 +155,12 @@ class StaplInterpreter:
             self.state.scope[instruction.name] = var
             logger.debug(f"Setting {instruction.name} to {v}...")
         elif isinstance(instruction, IrScanInstruction):
-            logger.warning("IrScan instruction not implemented")
+            in_array = instruction.data_array.evaluate(self.state.scope)
+            if len(in_array) != instruction.length.evaluate(self.state.scope):
+                raise Exception(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
+            if not instruction.capture_array is None or not instruction.compare_array is None:
+                raise NotImplementedError()
+            self.ctl.ir_scan(in_array, self.ir_stop)
         elif isinstance(instruction, IrStopInstruction):
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.ir_stop = instruction.state

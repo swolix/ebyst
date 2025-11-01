@@ -113,7 +113,29 @@ class CallInstruction(Instruction):
         assert len(tokens) == 1
         self.procedure = tokens[0]
 
-class DrScanInstruction(Instruction):
+class ScanInstruction(Instruction):
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        self.length = tokens[0]
+        self.data_array = tokens[1]
+        i = 2
+        if len(tokens) > i and tokens[i].upper() == "CAPTURE":
+            self.capture_array = tokens[i+1]
+            i += 2
+        else:
+            self.capture_array = None
+        if len(tokens) > i and tokens[i].upper() == "COMPARE":
+            self.compare_array = tokens[i+1]
+            self.mask_array = tokens[i+2]
+            self.compare_result = tokens[i+3]
+            i += 4
+        else:
+            self.compare_array = None
+            self.mask_array = None
+            self.compare_result = None
+        assert i == len(tokens)
+
+class DrScanInstruction(ScanInstruction):
     pass
 
 class DrStopInstruction(Instruction):
@@ -174,11 +196,8 @@ class IntegerInstruction(Instruction):
         else:
             return f"<Integer {self.name}[{self.length}]>"
 
-class IrScanInstruction(Instruction):
-    def __init__(self,  s, loc, tokens):
-        Instruction.__init__(self, s, loc, tokens)
-        self.length = tokens[0]
-        self.value = tokens[1]
+class IrScanInstruction(ScanInstruction):
+    pass
 
 class IrStopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):

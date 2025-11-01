@@ -106,6 +106,10 @@ class Checker:
             print(state)
             assert False
 
+    def ir_scan(self, ir, end_state):
+        self.check(f"IR SCAN {ir}")
+        self.enter_state(end_state)
+
     def wait(self, cycles, usec):
         self.check(f"WAIT {cycles} CYCLES, {usec} USEC")
 
