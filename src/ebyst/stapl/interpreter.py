@@ -237,13 +237,13 @@ class StaplInterpreter:
             for state in instruction.states:
                 self.ctl.enter_state(state)
         elif isinstance(instruction, TRSTInstruction):
-            self.ctl.trst(cycles=instruction.wait_cycles.evaluate(self.state.scope),
-                          usec=instruction.wait_usec.evaluate(self.state.scope))
+            self.ctl.trst(cycles=int(instruction.wait_cycles.evaluate(self.state.scope)),
+                          usec=int(instruction.wait_usec.evaluate(self.state.scope)))
         elif isinstance(instruction, WaitInstruction):
             if not instruction.wait_state is None:
                 self.ctl.enter_state(instruction.wait_state)
-            self.ctl.wait(cycles=instruction.wait_cycles.evaluate(self.state.scope),
-                          usec=instruction.wait_usec.evaluate(self.state.scope))
+            self.ctl.wait(cycles=int(instruction.wait_cycles.evaluate(self.state.scope)),
+                          usec=int(instruction.wait_usec.evaluate(self.state.scope)))
             if not instruction.end_state is None:
                 self.ctl.enter_state(instruction.end_state)
         else:
