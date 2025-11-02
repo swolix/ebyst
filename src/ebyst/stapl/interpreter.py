@@ -60,7 +60,7 @@ class StaplInterpreter:
             logger.debug(f"Setting {variable.name}[{first}:{last}] to {value}...")
             self.state.scope[variable.name].assign(slice(first, last), value)
         elif not variable.first is None:
-            first = int(variable.first.evaluate())
+            first = int(variable.first.evaluate(self.state.scope))
             logger.debug(f"Setting {variable.name}[{first}] to {value}...")
             self.state.scope[variable.name].assign(first, value)
         else:
