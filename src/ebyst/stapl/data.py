@@ -289,7 +289,7 @@ class IntArray(list, Evaluatable, Array):
 
 class BoolArray(Evaluatable, Array):
     def __init__(self, v):
-        self.v = bitarray(v)
+        self.v = bitarray(v, endian='little')
         if isinstance(v, str):
             self.v.reverse()
 
@@ -325,7 +325,7 @@ class BoolArray(Evaluatable, Array):
             if len(v) > slice_length:
                 v = BoolArray(v.v[:slice_length])
             elif len(v) < slice_length:
-                v = BoolArray(v.v + bitarray("0") * (slice_length - len(v)))
+                v = BoolArray(v.v + bitarray("0", endian='little') * (slice_length - len(v)))
 
             if i.start < i.stop:
                 self.v.__setitem__(slice(i.stop, i.start-1 if i.start > 0 else None, -1), v.v)

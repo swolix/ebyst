@@ -34,7 +34,7 @@ class Driver:
             self.transfer(tms, tdi)
     
     def transfer_tdi_tdo_str(self, tdi_str: bitarray, first_tms=0, last_tms=0) -> bitarray:
-        r = bitarray()
+        r = bitarray(endian='little')
         for tdi in tdi_str[:-1]:
             r.append(self.transfer(first_tms, tdi))
         r.append(self.transfer(last_tms, tdi_str[-1]))
@@ -49,7 +49,7 @@ class Driver:
         if n < 1: raise ValueError("n must be > 0")
         if n == 1 and first_tms != last_tms: raise ValueError("last_tms must be first_tms when n == 1")
         if n == 1 and first_tdi != last_tdi: raise ValueError("last_tdi must be first_tdi when n == 1")
-        r = bitarray()
+        r = bitarray(endian='little')
         for i in range(n-1):
             r.append(self.transfer(first_tms, first_tdi))
         r.append(self.transfer(last_tms, last_tdi))

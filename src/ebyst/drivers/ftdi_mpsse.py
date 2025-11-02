@@ -109,7 +109,7 @@ class MPSSE(Driver):
             self.ftdi.write_data(bytearray((Ftdi.RW_BITS_PVE_NVE_LSB, len(part)-1, ba2int(part))))
         self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if last_tdi else 0) | (1 if last_tms else 0))))
 
-        r = bitarray()
+        r = bitarray(endian='little')
         if len(tdi_str) > 0:
             r.append((self._read_bytes(1)[0] & 0x80) >> 7)
         for i in range(1, len(tdi_str), 8):
@@ -119,7 +119,7 @@ class MPSSE(Driver):
         return r
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
-        r = bitarray()
+        r = bitarray(endian='little')
         if last_tms is None: last_tms = first_tms
         if last_tdi is None: last_tdi = first_tdi
         if n < 1: raise ValueError("n must be > 0")

@@ -65,10 +65,10 @@ class BoolArrayParser:
     def __init__(self, _s, _loc, tokens):
         assert len(tokens) == 1
         if tokens[0][0] == '#':
-            self.v = bitarray(tokens[0][1:])
+            self.v = bitarray(tokens[0][1:], endian='little')
             self.v.reverse()
         elif tokens[0][0] == '$':
-            self.v = hex2ba(tokens[0][1:])
+            self.v = bitarray(hex2ba(tokens[0][1:], endian='big'), 'little')
             self.v.reverse()
         elif tokens[0][0] == '@':
             raise NotImplementedError()
@@ -103,7 +103,7 @@ class Function(Evaluatable):
         elif self.function == "INT":
             ba = self.v.evaluate(scope).v
             if len(ba) < 32:
-                ba += bitarray(32 - len(ba))
+                ba = ba + bitarray(32 - len(ba), endian='little')
             if len(ba) > 32:
                 ba = ba[:32]
             return Int(ba2int(ba, signed=True))
