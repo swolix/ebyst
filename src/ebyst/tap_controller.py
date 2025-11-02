@@ -208,7 +208,7 @@ class TapController:
             for i, dev in enumerate(self.chain):
                 if idcode[len(idcode)-i*32-32:len(idcode)-i*32] != dev.idcode:
                     raise Exception(f"IDCode doesn't match for device {i} {idcode}<=>{dev.idcode}")
-            
+
             self.load_instruction(Opcode.SAMPLE)
             br = self.read_register(self.chain.brlen)
             self.chain.update_br(br)

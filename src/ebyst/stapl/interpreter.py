@@ -266,10 +266,10 @@ class StaplInterpreter:
         self.dr_stop = State.RUN_TEST_IDLE
 
         for name, pc in self.stapl.data_blocks.items():
-            logger.info(f"Initializing {name}...")
+            logger.debug(f"Initializing {name}...")
             self._run_procedure(pc)
             self.data_scopes[name] = self.state.scope
-            logger.info(f"Data {name} initialized")
+            logger.debug(f"Data {name} initialized")
 
         logger.info(f"Running action {action}...")
         try:
