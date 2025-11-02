@@ -242,10 +242,14 @@ class StaplInterpreter:
         elif isinstance(instruction, WaitInstruction):
             if not instruction.wait_state is None:
                 self.ctl.enter_state(instruction.wait_state)
+            else:
+                self.ctl.enter_state(State.RUN_TEST_IDLE)
             self.ctl.wait(cycles=int(instruction.wait_cycles.evaluate(self.state.scope)),
                           usec=int(instruction.wait_usec.evaluate(self.state.scope)))
             if not instruction.end_state is None:
                 self.ctl.enter_state(instruction.end_state)
+            else:
+                self.ctl.enter_state(State.RUN_TEST_IDLE)
         else:
             raise NotImplementedError(f"{instruction} not implemented")
 

@@ -255,6 +255,7 @@ class TapController:
 
     def _goto(self, target_state: State, tdi=0):
         state = self.state
+        if state == target_state: return
         logger.debug(f"Going from {state.name} to {target_state.name}")
         tms = bitarray()
         while state != target_state:
