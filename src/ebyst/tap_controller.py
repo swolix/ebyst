@@ -351,11 +351,36 @@ class TapController:
                 assert False
 
         logger.debug(f"TMS string: {tms}")
-        
+
         self.driver.transmit_tms_str(tms, tdi)
         self.state = state
 
+    def export(self, key, value):
+        print(f"EXPORT {key}={value}")
+
     def wait(self, cycles, usec):
         """Wait for until both (tck-)cycles and usec are satisfied"""
-        raise NotImplementedError()
+        if self.state in (State.RUN_TEST_IDLE, State.PAUSE_DR, State.PAUSE_IR):
+            self.driver.transmit_tms_str(bitarray("0" * cycles))
+        elif self.state in (State.TEST_LOGIC_RESET, ):
+            self.driver.transmit_tms_str(bitarray("1" * cycles))
+        else:
+            raise Exception("{self.state} is not a wait state")
 
+    def ir_scan(self, ir, end_state):
+        logger.debug(f"IR scan {ir} exit to {end_state.name}")
+        self._goto(State.SHIFT_IR)
+        ret = self.driver.transfer_tdi_tdo_str(ir, first_tms=0 if len(ir) > 1 else 1, last_tms=1)
+        self.state = State.EXIT1_IR
+        self._goto(end_state)
+        self.in_extest = False
+        return ret
+
+    def dr_scan(self, dr, end_state):
+        logger.debug(f"DR scan {dr} exit to {end_state.name}")
+        self._goto(State.SHIFT_DR)
+        ret = self.driver.transfer_tdi_tdo_str(dr, first_tms=0 if len(dr) > 1 else 1, last_tms=1)
+        self.state = State.EXIT1_DR
+        self._goto(end_state)
+        self.in_extest = False
+        return ret
