@@ -98,10 +98,15 @@ class Function(Evaluatable):
 
     def evaluate(self, scope={}):
         if self.function == "BOOL":
-            ba = int2ba(int(self.v.evaluate(scope)), length=32, endian='little')
+            ba = int2ba(int(self.v.evaluate(scope)), length=32, signed=True, endian='little')
             return BoolArray(ba)
         elif self.function == "INT":
-            return Int(ba2int(self.v.evaluate(scope).v))
+            ba = self.v.evaluate(scope).v
+            if len(ba) < 32:
+                ba += bitarray(32 - len(ba))
+            if len(ba) > 32:
+                ba = ba[:32]
+            return Int(ba2int(ba, signed=True))
         elif self.function == "CHR$":
             return String(chr(Int(self.v.evaluate(scope)).v))
         else:
