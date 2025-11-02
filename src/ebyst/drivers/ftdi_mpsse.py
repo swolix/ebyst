@@ -107,11 +107,11 @@ class MPSSE(Driver):
 
         r = bitarray()
         if len(tdi_str) > 0:
-            r.append(self._read_bytes(1)[0] & 1)
+            r.append((self._read_bytes(1)[0] & 0x80) >> 7)
         for i in range(1, len(tdi_str), 8):
             part = tdi_str[i:i+8]
             r += int2ba(self._read_bytes(1)[0] >> (8 - len(part)), len(part), 'little')
-        r.append(self._read_bytes(1)[0] & 1)
+        r.append((self._read_bytes(1)[0] & 0x80) >> 7)
         return r
 
     def receive_tdo_str(self, n, first_tms=0, first_tdi=0, last_tms=None, last_tdi=None) -> bitarray:
