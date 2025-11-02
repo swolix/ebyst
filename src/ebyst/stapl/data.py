@@ -313,9 +313,10 @@ class BoolArray(Evaluatable, Array):
             self.v.setall(0)
             self.__setitem__(slice(min(len(v), len(self))-1, 0), v)
         elif isinstance(i, int):
-            if not isinstance(v, Bool):
+            if isinstance(v, Bool) or isinstance(v, Any):
+                self.v.__setitem__(i, v.v)
+            else:
                 raise ValueError(f"Can't assign {v} to boolean array element")
-            self.v.__setitem__(i, v.v)
         elif isinstance(i, slice):
             assert i.step is None
             if not isinstance(v, BoolArray):
