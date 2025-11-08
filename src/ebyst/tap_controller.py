@@ -369,20 +369,26 @@ class TapController:
             raise Exception("{self.state} is not a wait state")
         if usec: time.sleep(usec * 1e-6)
 
-    def ir_scan(self, ir, end_state):
-        logger.debug(f"IR scan {ir} exit to {end_state.name}")
+    def ir_scan(self, ir, end_state=None):
+        if end_state is None:
+            logger.debug(f"IR scan {ir}")
+        else:
+            logger.debug(f"IR scan {ir} exit to {end_state.name}")
         self._goto(State.SHIFT_IR)
         ret = self.driver.transfer_tdi_tdo_str(ir, first_tms=0 if len(ir) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_IR
-        self._goto(end_state)
+        if not end_state is None: self._goto(end_state)
         self.in_extest = False
         return ret
 
-    def dr_scan(self, dr, end_state):
-        logger.debug(f"DR scan {dr} exit to {end_state.name}")
+    def dr_scan(self, dr, end_state=None):
+        if end_state is None:
+            logger.debug(f"DR scan {dr}")
+        else:
+            logger.debug(f"DR scan {dr} exit to {end_state.name}")
         self._goto(State.SHIFT_DR)
         ret = self.driver.transfer_tdi_tdo_str(dr, first_tms=0 if len(dr) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
-        self._goto(end_state)
+        if not end_state is None: self._goto(end_state)
         self.in_extest = False
         return ret
