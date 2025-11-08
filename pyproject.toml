@@ -2,9 +2,9 @@
 name = "ebyst"
 version = "0.3.2"
 dependencies = [
-    "pyftdi",
-    "bitarray",
-    "pyparsing",
+    "pyftdi==0.57.1",
+    "bitarray==3.8.0",
+    "pyparsing==3.2.5",
 ]
 authors = [
   { name="Sijmen Woutersen", email="sijmen.woutersen@gmail.com" },
