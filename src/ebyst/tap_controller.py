@@ -219,6 +219,9 @@ class TapController:
         finally:
             self._goto(State.RUN_TEST_IDLE)
 
+    def set_frequency(self, frequency):
+        self.driver.set_freq(min(frequency, self.max_freq or frequency))
+
     def extest(self):
         self.in_extest = False
         self.load_instruction(Opcode.SAMPLE)

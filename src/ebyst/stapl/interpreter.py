@@ -146,7 +146,7 @@ class StaplInterpreter:
             self.state.loop_stack.append((instruction.var, step, end, self.state.pc))
             self.state.scope[instruction.var] = var = Variable(start)
         elif isinstance(instruction, FrequencyInstruction):
-            logger.warning("Frequency instruction not implemented")
+            self.ctl.set_frequency(int(instruction.frequency.evaluate(self.state.scope)))
         elif isinstance(instruction, GotoInstruction):
             try:
                 assert not self.state.procedure is None

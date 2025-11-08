@@ -164,7 +164,9 @@ class ExportInstruction(Instruction):
         return f"EXPORT {', '.join(str(s) for s in self.parts)}"
 
 class FrequencyInstruction(Instruction):
-    pass
+    def __init__(self,  s, loc, tokens):
+        Instruction.__init__(self, s, loc, tokens)
+        self.frequency = tokens[0]
 
 class GotoInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
