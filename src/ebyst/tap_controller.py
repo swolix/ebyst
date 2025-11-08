@@ -146,7 +146,7 @@ class TapController:
         self.state = State.EXIT1_DR
         self._goto(State.UPDATE_DR)
         return tdo
-    
+
     def detect_chain(self):
         """Detect chain length (nr of devices and total instruction register length"""
         try:
@@ -284,7 +284,7 @@ class TapController:
                 tms.append(1)
                 state = State.EXIT1_DR
             elif state == State.EXIT1_DR:
-                if target_state in(State.PAUSE_DR, State.EXIT2_DR, State.SHIFT_DR):
+                if target_state in (State.PAUSE_DR, State.EXIT2_DR, State.SHIFT_DR):
                     tms.append(0)
                     state = State.PAUSE_DR
                 else:
@@ -294,14 +294,14 @@ class TapController:
                 tms.append(1)
                 state = State.EXIT2_DR
             elif state == State.EXIT2_DR:
-                if target_state in(State.SHIFT_DR, State.EXIT1_DR, State.PAUSE_DR):
+                if target_state in (State.SHIFT_DR, State.EXIT1_DR, State.PAUSE_DR):
                     tms.append(0)
                     state = State.SHIFT_DR
                 else:
                     tms.append(1)
                     state = State.UPDATE_DR
             elif state == State.UPDATE_DR:
-                if state == State.RUN_TEST_IDLE:
+                if target_state == State.RUN_TEST_IDLE:
                     tms.append(0)
                     state = State.RUN_TEST_IDLE
                 else:
@@ -325,7 +325,7 @@ class TapController:
                 tms.append(1)
                 state = State.EXIT1_IR
             elif state == State.EXIT1_IR:
-                if target_state in(State.PAUSE_IR, State.EXIT2_IR, State.SHIFT_IR):
+                if target_state in (State.PAUSE_IR, State.EXIT2_IR, State.SHIFT_IR):
                     tms.append(0)
                     state = State.PAUSE_IR
                 else:
@@ -335,14 +335,14 @@ class TapController:
                 tms.append(1)
                 state = State.EXIT2_IR
             elif state == State.EXIT2_IR:
-                if target_state in(State.SHIFT_IR, State.EXIT1_IR, State.PAUSE_IR):
+                if target_state in (State.SHIFT_IR, State.EXIT1_IR, State.PAUSE_IR):
                     tms.append(0)
                     state = State.SHIFT_IR
                 else:
                     tms.append(1)
                     state = State.UPDATE_IR
             elif state == State.UPDATE_IR:
-                if state == State.RUN_TEST_IDLE:
+                if target_state == State.RUN_TEST_IDLE:
                     tms.append(0)
                     state = State.RUN_TEST_IDLE
                 else:
