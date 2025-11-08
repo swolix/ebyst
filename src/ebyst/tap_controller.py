@@ -20,6 +20,7 @@
 from enum import Enum, IntEnum
 import logging
 import asyncio
+import time
 
 from bitarray import bitarray
 
@@ -358,7 +359,7 @@ class TapController:
     def export(self, key, value):
         print(f"EXPORT {key}={value}")
 
-    def wait(self, cycles, usec):
+    def wait(self, cycles, usec=0):
         """Wait for until both (tck-)cycles and usec are satisfied"""
         if self.state in (State.RUN_TEST_IDLE, State.PAUSE_DR, State.PAUSE_IR):
             self.driver.transmit_tms_str(bitarray("0" * cycles))
@@ -366,6 +367,7 @@ class TapController:
             self.driver.transmit_tms_str(bitarray("1" * cycles))
         else:
             raise Exception("{self.state} is not a wait state")
+        if usec: time.sleep(usec * 1e-6)
 
     def ir_scan(self, ir, end_state):
         logger.debug(f"IR scan {ir} exit to {end_state.name}")
