@@ -20,6 +20,7 @@
 from enum import Enum, IntEnum
 import logging
 import asyncio
+import time
 
 from bitarray import bitarray
 
@@ -208,7 +209,7 @@ class TapController:
             for i, dev in enumerate(self.chain):
                 if idcode[len(idcode)-i*32-32:len(idcode)-i*32] != dev.idcode:
                     raise Exception(f"IDCode doesn't match for device {i} {idcode}<=>{dev.idcode}")
-            
+
             self.load_instruction(Opcode.SAMPLE)
             br = self.read_register(self.chain.brlen)
             self.chain.update_br(br)
@@ -217,6 +218,9 @@ class TapController:
             raise
         finally:
             self._goto(State.RUN_TEST_IDLE)
+
+    def set_frequency(self, frequency):
+        self.driver.set_freq(min(frequency, self.max_freq or frequency))
 
     def extest(self):
         self.in_extest = False
@@ -250,8 +254,12 @@ class TapController:
     def trace(self, fn, **pins):
         self.traces.append(Trace(fn, **pins))
 
+    def enter_state(self, state: State):
+        self._goto(state)
+
     def _goto(self, target_state: State, tdi=0):
         state = self.state
+        if state == target_state: return
         logger.debug(f"Going from {state.name} to {target_state.name}")
         tms = bitarray()
         while state != target_state:
@@ -347,6 +355,40 @@ class TapController:
                 assert False
 
         logger.debug(f"TMS string: {tms}")
-        
+
         self.driver.transmit_tms_str(tms, tdi)
         self.state = state
+
+    def wait(self, cycles, usec=0):
+        """Wait for until both (tck-)cycles and usec are satisfied"""
+        if self.state in (State.RUN_TEST_IDLE, State.PAUSE_DR, State.PAUSE_IR):
+            self.driver.transmit_tms_str(bitarray("0" * cycles))
+        elif self.state in (State.TEST_LOGIC_RESET, ):
+            self.driver.transmit_tms_str(bitarray("1" * cycles))
+        else:
+            raise Exception("{self.state} is not a wait state")
+        if usec: time.sleep(usec * 1e-6)
+
+    def ir_scan(self, ir, end_state=None):
+        if end_state is None:
+            logger.debug(f"IR scan {ir}")
+        else:
+            logger.debug(f"IR scan {ir} exit to {end_state.name}")
+        self._goto(State.SHIFT_IR)
+        ret = self.driver.transfer_tdi_tdo_str(ir, first_tms=0 if len(ir) > 1 else 1, last_tms=1)
+        self.state = State.EXIT1_IR
+        if not end_state is None: self._goto(end_state)
+        self.in_extest = False
+        return ret
+
+    def dr_scan(self, dr, end_state=None):
+        if end_state is None:
+            logger.debug(f"DR scan {dr}")
+        else:
+            logger.debug(f"DR scan {dr} exit to {end_state.name}")
+        self._goto(State.SHIFT_DR)
+        ret = self.driver.transfer_tdi_tdo_str(dr, first_tms=0 if len(dr) > 1 else 1, last_tms=1)
+        self.state = State.EXIT1_DR
+        if not end_state is None: self._goto(end_state)
+        self.in_extest = False
+        return ret
