@@ -261,7 +261,7 @@ class TapController:
         state = self.state
         if state == target_state: return
         logger.debug(f"Going from {state.name} to {target_state.name}")
-        tms = bitarray()
+        tms = bitarray(endian='little')
         while state != target_state:
             if state == State.TEST_LOGIC_RESET:
                 tms.append(0)
@@ -359,17 +359,18 @@ class TapController:
         self.driver.transmit_tms_str(tms, tdi)
         self.state = state
 
-    def wait(self, cycles, usec=0):
+    def wait(self, cycles: int, usec: int=0):
         """Wait for until both (tck-)cycles and usec are satisfied"""
         if self.state in (State.RUN_TEST_IDLE, State.PAUSE_DR, State.PAUSE_IR):
-            self.driver.transmit_tms_str(bitarray("0" * cycles))
+            self.driver.transmit_tms_str(bitarray("0" * cycles, 'little'))
         elif self.state in (State.TEST_LOGIC_RESET, ):
-            self.driver.transmit_tms_str(bitarray("1" * cycles))
+            self.driver.transmit_tms_str(bitarray("1" * cycles, 'little'))
         else:
             raise Exception("{self.state} is not a wait state")
         if usec: time.sleep(usec * 1e-6)
 
-    def ir_scan(self, ir, end_state=None):
+    def ir_scan(self, ir: bitarray, end_state: State | None=None):
+        if ir.endian != 'little': raise ValueError("ir must be little endian bitarray")
         if end_state is None:
             logger.debug(f"IR scan {ir}")
         else:
@@ -381,7 +382,8 @@ class TapController:
         self.in_extest = False
         return ret
 
-    def dr_scan(self, dr, end_state=None):
+    def dr_scan(self, dr: bitarray, end_state: State | None=None):
+        if dr.endian != 'little': raise ValueError("dr must be little endian bitarray")
         if end_state is None:
             logger.debug(f"DR scan {dr}")
         else:
