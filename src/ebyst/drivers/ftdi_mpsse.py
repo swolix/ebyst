@@ -70,7 +70,6 @@ class MPSSE(Driver):
         tdi = 0x80 if tdi else 0
         for i in range(0, len(tms_str), 7):
             part = tms_str[i:i+7].copy()
-            part.reverse()
             self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, len(part)-1, tdi | ba2int(part))))
 
     def transmit_tdi_str(self, tdi_str: bitarray, first_tms=0, last_tms=None):
@@ -84,7 +83,6 @@ class MPSSE(Driver):
             self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (tdi_str[0] << 7) | (1 if first_tms else 0))))
             for i in range(1, len(tdi_str), 8):
                 part = tdi_str[i:i+8].copy()
-                part.reverse()
                 self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_NVE_LSB, len(part)-1, ba2int(part))))
         self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (last_tdi << 7) | (1 if last_tms else 0))))
 
@@ -105,7 +103,6 @@ class MPSSE(Driver):
             i += 1
         for i in range(1, len(tdi_str), 8):
             part = tdi_str[i:i+8].copy()
-            part.reverse()
             self.ftdi.write_data(bytearray((Ftdi.RW_BITS_PVE_NVE_LSB, len(part)-1, ba2int(part))))
         self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if last_tdi else 0) | (1 if last_tms else 0))))
 

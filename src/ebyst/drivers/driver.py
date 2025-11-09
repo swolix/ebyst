@@ -32,7 +32,7 @@ class Driver:
     def transmit_tms_str(self, tms_str: bitarray, tdi=0):
         for tms in tms_str:
             self.transfer(tms, tdi)
-    
+
     def transfer_tdi_tdo_str(self, tdi_str: bitarray, first_tms=0, last_tms=0) -> bitarray:
         r = bitarray(endian='little')
         for tdi in tdi_str[:-1]:
