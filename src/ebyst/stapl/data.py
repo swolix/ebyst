@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from binascii import hexlify
 from bitarray import bitarray
 
 class VariableScope(dict):
@@ -343,7 +344,7 @@ class BoolArray(Evaluatable, Array):
         return len(self.v)
 
     def __str__(self):
-        return self.v.to01()[::-1]
+        return hexlify(self.v.tobytes()[::-1]).decode("ascii")
 
     def __repr__(self):
         return repr(self.v)
