@@ -19,6 +19,7 @@
 # SOFTWARE.
 import pyparsing as pp
 from .data import Evaluatable, Int, Bool, BoolArray, Any, String, VariableScope
+from . import aca
 from bitarray import bitarray
 from bitarray.util import hex2ba, int2ba, ba2int
 
@@ -71,7 +72,8 @@ class BoolArrayParser:
             self.v = bitarray(hex2ba(tokens[0][1:], endian='big'), 'little')
             self.v.reverse()
         elif tokens[0][0] == '@':
-            raise NotImplementedError()
+            self.v = bitarray(endian='little')
+            self.v.frombytes(aca.decompress(tokens[0][1:]))
         else:
             assert False
 

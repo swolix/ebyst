@@ -21,11 +21,13 @@ NOTE "TEST" "fffffffc";
 NOTE "TEST" "-4";
 NOTE "TEST" "65532";
 
+NOTE "TEST" "6362616665646c6b6a696867666564636261666564636261";
+NOTE "TEST" "00016f";
+
 ACTION TEST = DO_TEST;
 
 PROCEDURE DO_TEST;
     BOOLEAN array[4] = #1011;
-    `print array;
     EXPORT "TEST", array[3];
     EXPORT "TEST", array[2];
     EXPORT "TEST", array[1];
@@ -63,6 +65,11 @@ PROCEDURE DO_TEST;
     EXPORT "TEST", b;
     INTEGER c = INT(array5[15..0]);
     EXPORT "TEST", c;
+
+    BOOLEAN array[192] = @O00008Cn63PbPMRWpGBDgj6RV60;
+    EXPORT "TEST", array;
+    BOOLEAN array[12] = @30000uj000;
+    EXPORT "TEST", array;
 ENDPROC;
 
 CRC 0;
