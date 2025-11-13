@@ -27,6 +27,9 @@ class Evaluatable:
     def evaluate(self, scope=VariableScope()):
         raise NotImplementedError()
 
+    def optimize(self):
+        return self
+
 class Array:
     pass
 
@@ -363,7 +366,7 @@ class BoolArray(Evaluatable, Array):
     def __and__(self, other):
         return self.v & other.v
 
-class String(Evaluatable):
+class String:
     def __init__(self, v):
         self.v = str(v)
 

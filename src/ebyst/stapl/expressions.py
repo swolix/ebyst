@@ -56,13 +56,13 @@ class VariableRef(Evaluatable):
 
     def __str__(self):
         if not self.slice_end is None:
-            return f"{self.name}[{self.slice_start.evaluate()}..{self.slice_end.evaluate()}]"
+            return f"{self.name}[{self.slice_start}..{self.slice_end}]"
         elif not self.slice_start is None:
-            return f"{self.name}[{self.slice_start.evaluate()}]"
+            return f"{self.name}[{self.slice_start}]"
         else:
             return self.name
 
-class BoolArrayParser:
+class BoolArrayParser(Evaluatable):
     def __init__(self, _s, _loc, tokens):
         assert len(tokens) == 1
         self.s = tokens[0]
@@ -83,7 +83,7 @@ class BoolArrayParser:
 
         return BoolArray(ba)
 
-class IntParser:
+class IntParser(Evaluatable):
     def __init__(self, _s, _loc, tokens):
         assert len(tokens) == 1
         self.v = int(tokens[0])
@@ -123,6 +123,15 @@ class Function(Evaluatable):
 class Expression(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
         self.v = tokens
+
+    def optimize(self):
+        try:
+            return self.evaluate()
+        except KeyError:
+            if len(self.v) == 1:
+                return self.v[0].optimize()
+            else:
+                return self
 
     def evaluate(self, scope=VariableScope()):
         if len(self.v) == 1:
@@ -217,5 +226,5 @@ class Expression(Evaluatable):
         expression10 = (expression9 + pp.ZeroOrMore(pp.Literal("|") + expression9)).set_parse_action(cls)
         expression11 = (expression10 + pp.ZeroOrMore(pp.Literal("&&") + expression10)).set_parse_action(cls)
         expression12 = (expression11 + pp.ZeroOrMore(pp.Literal("||") + expression11)).set_parse_action(cls)
-        expression <<= expression12.set_parse_action(cls)
+        expression <<= expression12.set_parse_action(cls, lambda _s, _loc, tokens: tokens[0].optimize())
         return expression
