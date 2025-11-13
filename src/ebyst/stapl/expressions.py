@@ -65,20 +65,23 @@ class VariableRef(Evaluatable):
 class BoolArrayParser:
     def __init__(self, _s, _loc, tokens):
         assert len(tokens) == 1
-        if tokens[0][0] == '#':
-            self.v = bitarray(tokens[0][1:], endian='little')
-            self.v.reverse()
-        elif tokens[0][0] == '$':
-            self.v = bitarray(hex2ba(tokens[0][1:], endian='big'), 'little')
-            self.v.reverse()
-        elif tokens[0][0] == '@':
-            self.v = bitarray(endian='little')
-            self.v.frombytes(aca.decompress(tokens[0][1:]))
+        self.s = tokens[0]
+        assert self.s[0] in "#@$"
+
+    def evaluate(self, scope=VariableScope()):
+        if self.s[0] == '#':
+            ba = bitarray(self.s[1:], endian='little')
+            ba.reverse()
+        elif self.s[0] == '$':
+            ba = bitarray(hex2ba(self.s[1:], endian='big'), 'little')
+            ba.reverse()
+        elif self.s[0] == '@':
+            ba = bitarray(endian='little')
+            ba.frombytes(aca.decompress(self.s[1:]))
         else:
             assert False
 
-    def evaluate(self, scope=VariableScope()):
-        return BoolArray(self.v)
+        return BoolArray(ba)
 
 class IntParser:
     def __init__(self, _s, _loc, tokens):
