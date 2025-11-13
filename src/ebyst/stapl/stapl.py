@@ -563,9 +563,9 @@ class StaplFile:
                         pp.Opt(pp.CaselessKeyword("MAX").suppress() - wait_type) - pp.Suppress(pp.Literal(";"))).set_parse_action(WaitInstruction)
 
         opt_label = pp.Group(pp.Opt(identifier + pp.Suppress(pp.Literal(":"))))
-        instruction <<= pp.Or((assignment, boolean, call, data, drscan, drstop, end_data, end_procedure, exit, export,
-                               for_, frequency, goto, if_, integer, irscan, irstop, next, note, pop, print_, procedure,
-                               push, state, trst, wait))
+        instruction <<= pp.MatchFirst((assignment, boolean, call, data, drscan, drstop, end_data, end_procedure, exit,
+                                       export, for_, frequency, goto, if_, integer, irscan, irstop, next, note, pop,
+                                       print_, procedure, push, state, trst, wait))
         statement = (opt_label + instruction).set_parse_action(LabelledInstruction)
 
         stapl_file = (pp.ZeroOrMore(note) + pp.ZeroOrMore(action) + pp.ZeroOrMore(statement) +
@@ -574,4 +574,7 @@ class StaplFile:
         stapl_file.ignore(comments)
         stapl_file.enable_packrat()
 
-        return StaplFile(stapl_file.parse_string(f.read()))
+        logger.debug(f"Parsing stapl...")
+        f = StaplFile(stapl_file.parse_string(f.read()))
+        logger.debug(f"Stapl loaded")
+        return f
