@@ -70,7 +70,7 @@ def decompress(compressed: str):
                 ooffset += 1
         else:
             ioffset += 1
-            bits = math.ceil(math.log2(ooffset))
+            bits = min(math.ceil(math.log2(ooffset)), 13)
             repeat_offset = ba2int(ba[ioffset:ioffset+bits])
             ioffset += bits
             repeat_length = ba2int(ba[ioffset:ioffset+8])
