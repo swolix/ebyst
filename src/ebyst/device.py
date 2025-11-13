@@ -49,7 +49,7 @@ class StdLogicPattern:
         return f"StdLogicPattern('{self.pattern}')"
 
     def to_bitarray(self):
-        return bitarray(self.pattern.replace("X", "0"))
+        return bitarray(self.pattern.replace("X", "0"), endian='little')
 
 class Cell:
     """Represents a boundary scan cell"""
@@ -162,9 +162,8 @@ class DiffPin(tuple):
 
 class PinGroup(list):
     """Group of pins to be read/written all at once"""
-    def __init__(self, initial, endian='little'):
+    def __init__(self, initial):
         list.__init__(self, initial)
-        self.endian = endian
 
     @property
     def name(self):
@@ -185,7 +184,7 @@ class PinGroup(list):
                 pin.set_value((value >> i) & 1)
 
     def get_value(self):
-        r = bitarray(endian=self.endian)
+        r = bitarray(endian='little')
         for pin in self:
             r.append(pin.get_value())
         return r
@@ -195,7 +194,7 @@ class Device:
         self.irlen = irlen
         self.max_freq = max_freq
         self.idcode = idcode
-        if opcodes is None: opcodes = {'BYPASS': bitarray('1' * irlen)}
+        if opcodes is None: opcodes = {'BYPASS': bitarray('1' * irlen, endian='little')}
         if not 'BYPASS' in opcodes: raise ValueError("BYPASS command is required")
         self.opcodes = opcodes
         self.cells = cells
@@ -225,7 +224,7 @@ class Device:
             self.cells[i].in_value = v
 
     def generate_br(self):
-        r = bitarray()
+        r = bitarray(endian='little')
         for cell in self.cells:
             r.append(cell.out_value)
         return r
@@ -246,7 +245,7 @@ class Device:
             m = RE_OPCODE.match(opcode_str)
             if m:
                 opcode = m['opcode'].split(",")
-                ba = bitarray(opcode[0].strip())
+                ba = bitarray(opcode[0].strip(), endian='little')
                 ba.reverse()
                 opcodes[m['instruction'].upper()] = ba
                 opcode_str = opcode_str[m.end():]
