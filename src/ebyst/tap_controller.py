@@ -73,7 +73,7 @@ class TapController:
             return r
 
         def generate_ir(self, instruction):
-            tdi_str = bitarray()
+            tdi_str = bitarray(endian='little')
             for dev in self:
                 try:
                     tdi_str = dev.opcodes[instruction.value] + tdi_str
@@ -86,7 +86,7 @@ class TapController:
                 dev.reset()
 
         def generate_br(self):
-            tdi_str = bitarray()
+            tdi_str = bitarray(endian='little')
             for dev in self:
                 tdi_str = dev.generate_br() + tdi_str
             return tdi_str
@@ -152,7 +152,7 @@ class TapController:
         try:
             self._goto(State.SHIFT_IR)
             # load IR with 0
-            self.driver.transmit_tdi_str(bitarray('0') * MAX_IR_CHAIN_LENGTH)
+            self.driver.transmit_tdi_str(bitarray('0', endian='little') * MAX_IR_CHAIN_LENGTH)
             if self.driver.transfer(0, 0) != 0:
                 raise Exception("Chain detection failed: TDO stuck at 1")
             # load IR with 1, find rising edge position
@@ -165,7 +165,7 @@ class TapController:
             self._goto(State.UPDATE_IR, 1)
             self._goto(State.SHIFT_DR)
             # load BYPASS with 0
-            self.driver.transmit_tdi_str(bitarray('0') * MAX_IR_CHAIN_LENGTH)
+            self.driver.transmit_tdi_str(bitarray('0', endian='little') * MAX_IR_CHAIN_LENGTH)
             if self.driver.transfer(0, 0) != 0:
                 raise Exception("Chain detection failed: TDO stuck at 1")
             # load BYPASS with 1, find rising edge position

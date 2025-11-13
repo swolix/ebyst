@@ -64,19 +64,19 @@ class Sim(Driver):
                 self.dr_size = 32
             elif self.ir == self.device.opcodes['BYPASS']:
                 logger.info("Bypass")
-                self.shift_dr = bitarray('0')
+                self.shift_dr = bitarray('0', endian='little')
                 self.dr_size = 1
             elif self.ir == self.device.opcodes['SAMPLE']:
                 logger.info("Sample")
-                self.shift_dr = bitarray('0')
+                self.shift_dr = bitarray('0', endian='little')
                 self.dr_size = len(self.device.cells)
             elif self.ir == self.device.opcodes['EXTEST']:
                 logger.info("Extest")
-                self.shift_dr = bitarray('0')
+                self.shift_dr = bitarray('0', endian='little')
                 self.dr_size = len(self.device.cells)
             else:
                 logger.warning(f"Unknown IR bin({self.ir})")
-                self.shift_dr = bitarray('0')
+                self.shift_dr = bitarray('0', endian='little')
                 self.dr_size = 1
 
             if tms == 0:
@@ -113,7 +113,7 @@ class Sim(Driver):
             elif tms == 1:
                 next_state = State.TEST_LOGIC_RESET
         elif self.state == State.CAPTURE_IR:
-            self.ir = bitarray('0' * self.device.irlen) # TODO take INSTRUCTION_CAPTURE from BSDL
+            self.ir = bitarray('0' * self.device.irlen, endian='little') # TODO take INSTRUCTION_CAPTURE from BSDL
             self.shift_ir = self.ir
             if tms == 0:
                 next_state = State.SHIFT_IR
