@@ -67,6 +67,9 @@ class ArrayVariable(Variable):
     def evaluate(self, scope=VariableScope()):
         return self.v.evaluate(scope)
 
+    def __len__(self):
+        return len(self.v)
+
     def __str__(self):
         return str(self.v)
 
@@ -362,6 +365,9 @@ class BoolArray(Evaluatable, Array):
 
     def to_bitarray(self):
         return self.v
+
+    def extend(self, length):
+        while len(self.v) < length: self.v.append(0)
 
     def __and__(self, other):
         return self.v & other.v

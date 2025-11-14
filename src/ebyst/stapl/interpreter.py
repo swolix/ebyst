@@ -102,8 +102,8 @@ class StaplInterpreter:
             in_array = instruction.data_array.evaluate(self.state.scope)
             length = int(instruction.length.evaluate(self.state.scope))
             if len(in_array) < length:
-                raise Exception(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
-            if len(in_array) != length:
+                in_array.extend(length)
+            elif len(in_array) > length:
                 in_array = in_array[length-1:0]
             out_array = self.ctl.dr_scan(in_array.to_bitarray(), self.dr_stop)
             out_array = BoolArray(out_array)
