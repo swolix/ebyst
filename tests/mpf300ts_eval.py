@@ -86,16 +86,16 @@ async def ddr3(ctl, dev):
     ctl.trace("ddr3.vcd", **pins)
     ddr3 = DDR3(ctl, **pins)
 
-    bank = bitarray("000")
-    row = bitarray("0000000000000000")
-    column = bitarray("0000000000000000")
+    bank = bitarray("000", endian='little')
+    row = bitarray("0000000000000000", endian='little')
+    column = bitarray("0000000000000000", endian='little')
 
     await ddr3.init()
 
     await ddr3.activate(ba=bank, ra=row)
     wdata = []
     for i in range(8):
-        wdata.append(int2ba(random.randint(0, 255), 8))
+        wdata.append(int2ba(random.randint(0, 255), 8, endian='little'))
     print(f"DDR3: Writing: {' '.join(['%02x' % ba2int(x) for x in wdata])}")
     await ddr3.write(ba=bank, ca=column, data=wdata)
     await ddr3.precharge(ba=bank)
