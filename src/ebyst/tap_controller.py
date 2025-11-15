@@ -370,7 +370,7 @@ class TapController:
             self.driver.transmit_tms_str(bitarray("1" * cycles, 'little'))
         else:
             raise Exception("{self.state} is not a wait state")
-        if usec: time.sleep(usec * 1e-6)
+        if usec > 500: time.sleep(usec * 1e-6)
 
     def ir_scan(self, ir: bitarray, end_state: State | None=None):
         if ir.endian != 'little': raise ValueError("ir must be little endian bitarray")
