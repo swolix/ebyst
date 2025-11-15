@@ -266,9 +266,13 @@ class StaplInterpreter:
         self.state = None
         return state
 
-    def run(self, action):
+    def run(self, action, recommended=True, optional=False):
         self.ir_stop = State.RUN_TEST_IDLE
         self.dr_stop = State.RUN_TEST_IDLE
+
+        which = ["required"]
+        if recommended: which.append("recommended")
+        if optional: which.append("optional")
 
         for name, pc in self.stapl.data_blocks.items():
             logger.debug("Initializing %s...", name)
@@ -282,7 +286,8 @@ class StaplInterpreter:
             raise KeyError(f"Action {action} not found")
         for procedure, opt in action.procedures:
             try:
-                self._run_procedure(self.stapl.procedures[procedure], procedure)
+                if opt in which:
+                    self._run_procedure(self.stapl.procedures[procedure], procedure)
             except KeyError:
                 raise KeyError(f"Procedure {procedure} not found")
             except StaplExitCode as e:
