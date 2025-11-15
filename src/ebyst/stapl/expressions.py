@@ -19,7 +19,7 @@
 # SOFTWARE.
 import pyparsing as pp
 from .data import Evaluatable, Int, Bool, BoolArray, Any, String, VariableScope
-from . import aca
+from . import aca # type: ignore
 from bitarray import bitarray
 from bitarray.util import hex2ba, int2ba, ba2int
 
@@ -48,6 +48,7 @@ class VariableRef(Evaluatable):
             raise KeyError(f"Variable {self.name} not defined")
         else:
             if not self.slice_end is None:
+                assert not self.slice_start is None
                 return variable.evaluate(scope)[slice(int(self.slice_start.evaluate(scope)), int(self.slice_end.evaluate(scope)))]
             elif not self.slice_start is None:
                 return variable.evaluate(scope)[int(self.slice_start.evaluate(scope))].evaluate(scope)
@@ -234,5 +235,5 @@ class Expression(Evaluatable):
         expression10 = (expression9 + pp.ZeroOrMore(pp.Literal("|") + expression9)).set_parse_action(cls)
         expression11 = (expression10 + pp.ZeroOrMore(pp.Literal("&&") + expression10)).set_parse_action(cls)
         expression12 = (expression11 + pp.ZeroOrMore(pp.Literal("||") + expression11)).set_parse_action(cls)
-        expression <<= expression12.set_parse_action(cls, lambda _s, _loc, tokens: tokens[0].optimize())
+        expression <<= expression12.set_parse_action(cls, lambda _s, _loc, tokens: tokens[0].optimize()) # type: ignore
         return expression

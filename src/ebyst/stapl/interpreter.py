@@ -53,6 +53,7 @@ class StaplInterpreter:
         self.dr_stop = State.RUN_TEST_IDLE
 
     def _assign(self, variable, value):
+        assert not self.state is None
         if not variable.last is None:
             assert not variable.first is None
             first = int(variable.first.evaluate(self.state.scope))
@@ -165,6 +166,7 @@ class StaplInterpreter:
                     v = instruction.value.evaluate(self.state.scope)
                 var = Variable(v)
             else:
+                assert isinstance(instruction.value, IntArray)
                 v = IntArray([0] * instruction.length)
                 if not instruction.value is None:
                     for i in range(instruction.length):
@@ -260,6 +262,9 @@ class StaplInterpreter:
         done = False
         while not done:
             done = not self.execute()
+        state = self.state
+        self.state = None
+        return state
 
     def run(self, action):
         self.ir_stop = State.RUN_TEST_IDLE
@@ -267,8 +272,7 @@ class StaplInterpreter:
 
         for name, pc in self.stapl.data_blocks.items():
             logger.debug(f"Initializing {name}...")
-            self._run_procedure(pc)
-            self.data_scopes[name] = self.state.scope
+            self.data_scopes[name] = self._run_procedure(pc).scope
             logger.debug(f"Data {name} initialized")
 
         logger.info(f"Running action {action}...")

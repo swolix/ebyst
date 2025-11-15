@@ -30,26 +30,33 @@ class Evaluatable:
     def optimize(self):
         return self
 
-class Array:
-    pass
+class Array(Evaluatable):
+    def __getitem__(self, k):
+        raise NotImplementedError()
+
+    def __setitem__(self, k, v):
+        raise NotImplementedError()
+
+    def __len__(self):
+        raise NotImplementedError()
 
 class Variable(Evaluatable):
     def __init__(self, v):
         assert isinstance(v, Evaluatable)
         self.v = v
 
-    def assign(self, v):
+    def assign(self, v, *args, **kwargs):
         if not isinstance(self.v, Any):
-            v = type(self.v)(v)
+            v = type(self.v)(v) # type: ignore
         assert isinstance(v, Evaluatable)
         self.v = v
 
     def evaluate(self, scope=VariableScope()):
         return self.v.evaluate(scope)
 
-class ArrayVariable(Variable):
+class ArrayVariable(Variable, Array):
     def __init__(self, v):
-        assert isinstance(v, Evaluatable)
+        assert isinstance(v, Array)
         len(v)
         self.v = v
 
@@ -132,10 +139,10 @@ class Int(Evaluatable):
     def __lt__(self, other):
         return Bool(self.v < Int(other).v)
 
-    def __eq__(self, other):
+    def __eq__(self, other): # type: ignore
         return Bool(self.v == Int(other).v)
 
-    def __ne__(self, other):
+    def __ne__(self, other): # type: ignore
         return Bool(self.v != Int(other).v)
 
     def __invert__(self):
@@ -170,10 +177,10 @@ class Bool(Evaluatable):
     def evaluate(self, scope=VariableScope()):
         return self
 
-    def __eq__(self, other):
+    def __eq__(self, other): # type: ignore
         return Bool(self.v == Bool(other).v)
 
-    def __ne__(self, other):
+    def __ne__(self, other): # type: ignore
         return Bool(self.v != Bool(other).v)
 
     def __and__(self, other):
@@ -247,7 +254,7 @@ class Any(Int):
     def clone(self):
         return Any(self)
 
-class IntArray(list, Evaluatable, Array):
+class IntArray(list, Array):
     def __init__(self, init=[]):
         for x in init:
             if isinstance(x, int):
@@ -294,7 +301,7 @@ class IntArray(list, Evaluatable, Array):
     def evaluate(self, scope=VariableScope()):
         return self
 
-class BoolArray(Evaluatable, Array):
+class BoolArray(Array):
     def __init__(self, v):
         self.v = bitarray(v, endian='little')
         if isinstance(v, str):

@@ -20,7 +20,8 @@
 import logging
 import pyparsing as pp
 
-from .expressions import Expression, Int
+from .data import Int, IntArray
+from .expressions import Expression
 from ..tap_controller import State
 
 logger = logging.getLogger(__name__)
@@ -220,7 +221,7 @@ class IntegerInstruction(Instruction):
         self.length = None if tokens[0].length is None else int(tokens[0].length.evaluate())
 
         if not self.length is None:
-            self.value = [Int(0)] * self.length
+            self.value = IntArray([Int(0)] * self.length)
             if len(tokens) > 1:
                 assert self.length == len(tokens) - 1
                 for i in range(self.length):
