@@ -138,7 +138,7 @@ class StaplInterpreter:
                     s += str(part.evaluate(self.state.scope))
                 else:
                     s += str(part)
-            logger.info(f"EXPORT {instruction.key}: {s}")
+            logger.debug("EXPORT %s: %s", instruction.key, s)
             self.ctl.export(instruction.key, s)
         elif isinstance(instruction, ForInstruction):
             start = instruction.start.evaluate(self.state.scope)
