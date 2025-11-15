@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import pyparsing as pp
+import re
 from .data import Evaluatable, Int, Bool, BoolArray, Any, String, VariableScope
 from . import aca # type: ignore
 from bitarray import bitarray
@@ -73,10 +74,10 @@ class BoolArrayParser(Evaluatable):
     def evaluate(self, scope=VariableScope()):
         if self.ba is None:
             if self.s[0] == '#':
-                self.ba = bitarray(self.s[1:], endian='little')
+                self.ba = bitarray(re.sub(r'\s+', '', self.s[1:]), endian='little')
                 self.ba.reverse()
             elif self.s[0] == '$':
-                self.ba = bitarray(hex2ba(self.s[1:], endian='big'), 'little')
+                self.ba = bitarray(hex2ba(re.sub(r'\s+', '', self.s[1:]), endian='big'), 'little')
                 self.ba.reverse()
             elif self.s[0] == '@':
                 self.ba = bitarray(endian='little')
@@ -217,28 +218,28 @@ class Expression(Evaluatable):
     @classmethod
     def get_parse_rule(cls):
         expression = pp.Forward()
-        variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
+        variable = (pp.Regex(r"[a-zA-Z][a-zA-Z0-9_]*") +
                     pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
                            pp.Literal("]").suppress())).set_parse_action(VariableRef)
         literal = pp.pyparsing_common.integer.set_parse_action(IntParser) | (pp.MatchFirst((
-                                  pp.Combine(pp.Literal("#") - pp.OneOrMore(pp.Word(pp.srange("[01]"))), adjacent=False),
-                                  pp.Combine(pp.Literal("$") - pp.OneOrMore(pp.Word(pp.srange("[0-9a-fA-F]"))), adjacent=False),
-                                  pp.Regex(r"@[^;]*")))).set_parse_action(BoolArrayParser)
+                                  pp.Regex(r"#[01\s]+"),
+                                  pp.Regex(r"\$[0-9a-fA-F\s]+"),
+                                  pp.Regex(r"@[^;]+")))).set_parse_action(BoolArrayParser)
         function = (pp.Group((pp.CaselessKeyword("BOOL") | pp.CaselessKeyword("INT") | pp.CaselessKeyword("CHR$")) +
                              pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())).set_parse_action(Function)
 
         expression0 = (function | variable | literal).set_parse_action(cls)
-        expression1 = expression0 | (pp.Literal("(").suppress() + expression + pp.Literal(")").suppress())
+        expression1 = expression0 | (pp.Literal("(").suppress() - expression - pp.Literal(")").suppress())
         expression2 = (pp.Opt(pp.one_of("- ! ~")) + expression1).set_parse_action(cls)
-        expression3 = (expression2 + pp.ZeroOrMore(pp.one_of("* / %") + expression2)).set_parse_action(cls)
-        expression4 = (expression3 + pp.ZeroOrMore(pp.one_of("+ -") + expression3)).set_parse_action(cls)
-        expression5 = (expression4 + pp.ZeroOrMore(pp.one_of("<< >>") + expression4)).set_parse_action(cls)
-        expression6 = (expression5 + pp.ZeroOrMore(pp.one_of("<= >= < >") + expression5)).set_parse_action(cls)
-        expression7 = (expression6 + pp.ZeroOrMore(pp.one_of("== !=") + expression6)).set_parse_action(cls)
-        expression8 = (expression7 + pp.ZeroOrMore(pp.Literal("&") + expression7)).set_parse_action(cls)
-        expression9 = (expression8 + pp.ZeroOrMore(pp.Literal("^") + expression8)).set_parse_action(cls)
-        expression10 = (expression9 + pp.ZeroOrMore(pp.Literal("|") + expression9)).set_parse_action(cls)
-        expression11 = (expression10 + pp.ZeroOrMore(pp.Literal("&&") + expression10)).set_parse_action(cls)
-        expression12 = (expression11 + pp.ZeroOrMore(pp.Literal("||") + expression11)).set_parse_action(cls)
+        expression3 = (expression2 - pp.ZeroOrMore(pp.one_of("* / %") + expression2)).set_parse_action(cls)
+        expression4 = (expression3 - pp.ZeroOrMore(pp.one_of("+ -") + expression3)).set_parse_action(cls)
+        expression5 = (expression4 - pp.ZeroOrMore(pp.one_of("<< >>") + expression4)).set_parse_action(cls)
+        expression6 = (expression5 - pp.ZeroOrMore(pp.one_of("<= >= < >") + expression5)).set_parse_action(cls)
+        expression7 = (expression6 - pp.ZeroOrMore(pp.one_of("== !=") + expression6)).set_parse_action(cls)
+        expression8 = (expression7 - pp.ZeroOrMore(pp.Literal("&") + expression7)).set_parse_action(cls)
+        expression9 = (expression8 - pp.ZeroOrMore(pp.Literal("^") + expression8)).set_parse_action(cls)
+        expression10 = (expression9 - pp.ZeroOrMore(pp.Literal("|") + expression9)).set_parse_action(cls)
+        expression11 = (expression10 - pp.ZeroOrMore(pp.Literal("&&") + expression10)).set_parse_action(cls)
+        expression12 = (expression11 - pp.ZeroOrMore(pp.Literal("||") + expression11)).set_parse_action(cls)
         expression <<= expression12.set_parse_action(cls, lambda _s, _loc, tokens: tokens[0].optimize()) # type: ignore
         return expression

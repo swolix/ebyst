@@ -558,39 +558,39 @@ class StaplFile:
         expression = Expression.get_parse_rule()
         identifier = pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]"))
         variable_decl = (identifier + pp.Opt(pp.Literal("[").suppress() - expression - pp.Literal("]").suppress())).set_parse_action(VariableDecl)
-        state_name = pp.Or((pp.CaselessKeyword("RESET"),
-                            pp.CaselessKeyword("IDLE"),
-                            pp.CaselessKeyword("DRSELECT"),
-                            pp.CaselessKeyword("DRCAPTURE"),
-                            pp.CaselessKeyword("DRSHIFT"),
-                            pp.CaselessKeyword("DREXIT1"),
-                            pp.CaselessKeyword("DRPAUSE"),
-                            pp.CaselessKeyword("DREXIT2"),
-                            pp.CaselessKeyword("DRUPDATE"),
-                            pp.CaselessKeyword("IRSELECT"),
-                            pp.CaselessKeyword("IRCAPTURE"),
-                            pp.CaselessKeyword("IRSHIFT"),
-                            pp.CaselessKeyword("IREXIT1"),
-                            pp.CaselessKeyword("IRPAUSE"),
-                            pp.CaselessKeyword("IREXIT2"),
-                            pp.CaselessKeyword("IRUPDATE"))).set_parse_action(StateConvert)
+        state_name = pp.MatchFirst((pp.CaselessKeyword("RESET"),
+                                    pp.CaselessKeyword("IDLE"),
+                                    pp.CaselessKeyword("DRSELECT"),
+                                    pp.CaselessKeyword("DRCAPTURE"),
+                                    pp.CaselessKeyword("DRSHIFT"),
+                                    pp.CaselessKeyword("DREXIT1"),
+                                    pp.CaselessKeyword("DRPAUSE"),
+                                    pp.CaselessKeyword("DREXIT2"),
+                                    pp.CaselessKeyword("DRUPDATE"),
+                                    pp.CaselessKeyword("IRSELECT"),
+                                    pp.CaselessKeyword("IRCAPTURE"),
+                                    pp.CaselessKeyword("IRSHIFT"),
+                                    pp.CaselessKeyword("IREXIT1"),
+                                    pp.CaselessKeyword("IRPAUSE"),
+                                    pp.CaselessKeyword("IREXIT2"),
+                                    pp.CaselessKeyword("IRUPDATE"))).set_parse_action(StateConvert)
 
         str_expression = pp.Or((pp.QuotedString("\""), expression)) # TODO
 
         action = (pp.CaselessKeyword("ACTION").suppress() - identifier - pp.Group(pp.Opt(pp.QuotedString("\""))) -
                   pp.Literal("=").suppress() -
-                  pp.Group(identifier - pp.Or((pp.CaselessKeyword("OPTIONAL") + pp.Tag("opt", "optional"),
-                                               pp.CaselessKeyword("RECOMMENDED") + pp.Tag("opt", "recommended"),
+                  pp.Group(identifier - pp.Or((pp.CaselessKeyword("OPTIONAL") - pp.Tag("opt", "optional"),
+                                               pp.CaselessKeyword("RECOMMENDED") - pp.Tag("opt", "recommended"),
                                                pp.Tag("opt", "required")))) -
                   pp.ZeroOrMore(pp.Literal(",").suppress() - pp.Group(identifier -
-                                pp.Or((pp.CaselessKeyword("OPTIONAL") + pp.Tag("opt", "optional"),
-                                       pp.CaselessKeyword("RECOMMENDED") + pp.Tag("opt", "recommended"),
+                                pp.Or((pp.CaselessKeyword("OPTIONAL") - pp.Tag("opt", "optional"),
+                                       pp.CaselessKeyword("RECOMMENDED") - pp.Tag("opt", "recommended"),
                                        pp.Tag("opt", "required"))))) -
                   pp.Literal(";").suppress()).set_parse_action(Action)
-        variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) +
-                    pp.Opt(pp.Literal("[").suppress() + pp.Opt(expression + pp.Opt(pp.Literal("..").suppress() + expression)) +
+        variable = (pp.Word(init_chars=pp.srange("[a-zA-Z]"), body_chars=pp.srange("[a-zA-Z0-9_]")) -
+                    pp.Opt(pp.Literal("[").suppress() - pp.Opt(expression - pp.Opt(pp.Literal("..").suppress() - expression)) -
                            pp.Literal("]").suppress())).set_parse_action(Variable)
-        assignment = (variable + pp.Literal("=").suppress() + expression + pp.Suppress(pp.Literal(";"))).set_parse_action(AssignmentInstruction)
+        assignment = (variable + pp.Literal("=").suppress() - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(AssignmentInstruction)
         boolean = (pp.CaselessKeyword("BOOLEAN").suppress() - variable_decl - pp.Opt(pp.Literal("=").suppress() -
                            expression) - pp.Literal(";").suppress()).set_parse_action(BooleanInstruction)
         call = (pp.CaselessKeyword("CALL").suppress() - identifier - pp.Suppress(pp.Literal(";"))).set_parse_action(CallInstruction)
@@ -635,7 +635,8 @@ class StaplFile:
                      pp.Literal(";").suppress()).set_parse_action(ProcedureInstruction)
         push = (pp.CaselessKeyword("PUSH").suppress() - expression - pp.Suppress(pp.Literal(";"))).set_parse_action(PushInstruction)
         state = (pp.CaselessKeyword("STATE").suppress() - pp.OneOrMore(state_name) - pp.Literal(";").suppress()).set_parse_action(StateInstruction)
-        wait_type = pp.Or((expression - pp.CaselessKeyword("CYCLES") - pp.Opt(pp.Suppress(pp.Literal(",")) + expression + pp.CaselessKeyword("USEC")),
+        wait_type = pp.Or((expression - pp.CaselessKeyword("CYCLES") -
+                           pp.Opt(pp.Suppress(pp.Literal(",")) + expression + pp.CaselessKeyword("USEC")),
                            expression - pp.CaselessKeyword("USEC"))).set_parse_action(WaitType)
         trst = (pp.CaselessKeyword("TRST").suppress() - pp.Opt(wait_type) - pp.Suppress(pp.Literal(";"))).set_parse_action(TRSTInstruction)
         wait = (pp.CaselessKeyword("WAIT").suppress() - pp.Opt(state_name - pp.Suppress(pp.Literal(","))) -
@@ -648,8 +649,7 @@ class StaplFile:
                                        print_, procedure, push, state, trst, wait))
         statement = (opt_label + instruction).set_parse_action(LabelledInstruction)
 
-        stapl_file = (pp.ZeroOrMore(note) + pp.ZeroOrMore(action) + pp.ZeroOrMore(statement) +
-                      crc + pp.StringEnd())
+        stapl_file = (pp.ZeroOrMore(note) - pp.ZeroOrMore(action) - pp.ZeroOrMore(statement) - crc - pp.StringEnd())
 
         stapl_file.ignore(comments)
         stapl_file.enable_packrat()
