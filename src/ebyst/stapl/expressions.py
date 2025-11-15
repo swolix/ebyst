@@ -140,6 +140,11 @@ class Expression(Evaluatable):
             if len(self.v) == 1:
                 return self.v[0].optimize()
             else:
+                for i in range(len(self.v)):
+                    try:
+                        self.v[i] = self.v[i].optimize()
+                    except AttributeError:
+                        pass
                 return self
 
     def evaluate(self, scope=VariableScope()):
