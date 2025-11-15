@@ -68,9 +68,11 @@ class MPSSE(Driver):
 
     def transmit_tms_str(self, tms_str: bitarray, tdi=0):
         tdi = 0x80 if tdi else 0
+        w = bytearray()
         for i in range(0, len(tms_str), 7):
             part = tms_str[i:i+7].copy()
-            self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, len(part)-1, tdi | ba2int(part))))
+            w += bytearray((Ftdi.WRITE_BITS_TMS_NVE, len(part)-1, tdi | ba2int(part)))
+        self.ftdi.write_data(w)
 
     def transmit_tdi_str(self, tdi_str: bitarray, first_tms=0, last_tms=None):
         if last_tms is None: last_tms = first_tms
@@ -79,12 +81,14 @@ class MPSSE(Driver):
 
         tdi_str = tdi_str.copy()
         last_tdi = tdi_str.pop()
+        w = bytearray()
         if len(tdi_str) > 0:
-            self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (tdi_str[0] << 7) | (1 if first_tms else 0))))
+            w += bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (tdi_str[0] << 7) | (1 if first_tms else 0)))
             for i in range(1, len(tdi_str), 8):
                 part = tdi_str[i:i+8].copy()
-                self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_NVE_LSB, len(part)-1, ba2int(part))))
-        self.ftdi.write_data(bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (last_tdi << 7) | (1 if last_tms else 0))))
+                w += bytearray((Ftdi.WRITE_BITS_NVE_LSB, len(part)-1, ba2int(part)))
+        w += bytearray((Ftdi.WRITE_BITS_TMS_NVE, 0, (last_tdi << 7) | (1 if last_tms else 0)))
+        self.ftdi.write_data(w)
 
     def transfer_tdi_tdo_str(self, tdi_str: bitarray, first_tms=0, last_tms=0) -> bitarray:
         if last_tms is None: last_tms = first_tms
@@ -94,17 +98,19 @@ class MPSSE(Driver):
         tdi_str = tdi_str.copy()
         last_tdi = tdi_str.pop()
 
+        w = bytearray()
         # NOTE: write all commands first, read results below for highest throughput,
         #       requires enough buffer size on FTDI/PC, not sure if this is an issue
 
         i = 0
         if len(tdi_str) > 0:
-            self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if tdi_str[0] else 0) | (1 if first_tms else 0))))
+            w += bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if tdi_str[0] else 0) | (1 if first_tms else 0)))
             i += 1
         for i in range(1, len(tdi_str), 8):
             part = tdi_str[i:i+8].copy()
-            self.ftdi.write_data(bytearray((Ftdi.RW_BITS_PVE_NVE_LSB, len(part)-1, ba2int(part))))
-        self.ftdi.write_data(bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if last_tdi else 0) | (1 if last_tms else 0))))
+            w += bytearray((Ftdi.RW_BITS_PVE_NVE_LSB, len(part)-1, ba2int(part)))
+        w += bytearray((Ftdi.RW_BITS_TMS_PVE_NVE, 0, (0x80 if last_tdi else 0) | (1 if last_tms else 0)))
+        self.ftdi.write_data(w)
 
         r = bitarray(endian='little')
         if len(tdi_str) > 0:
