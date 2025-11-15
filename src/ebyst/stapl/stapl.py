@@ -46,6 +46,9 @@ class Action:
         return f"<Action {self.text}: {', '.join(p[0] + ("?" if p[1] == "optional" else "") +
                                                  ("*" if p[1] == "recommended" else "") for p in self.procedures)}>"
 
+    def __str__(self):
+        return f"ACTION {self.name}"
+
 class VariableDecl:
     def __init__(self,  _s, _loc, tokens):
         self.name = tokens[0]
@@ -54,11 +57,11 @@ class VariableDecl:
         else:
             self.length = None
 
-    def __repr__(self):
+    def __str__(self):
         if self.length is None:
-            return f"<{self.name}>"
+            return f"{self.name}"
         else:
-            return f"<{self.name}[{self.length}]>"
+            return f"{self.name}[{self.length}]"
 
 class Variable:
     def __init__(self,  s, loc, tokens):
@@ -77,6 +80,9 @@ class Variable:
         else:
             assert False
 
+    def __str__(self):
+        return self.name
+
 class Instruction:
     def __init__(self,  s, loc, tokens):
         self.line = pp.lineno(loc, s)
@@ -92,6 +98,9 @@ class LabelledInstruction(Instruction):
     def execute(self, interpreter):
         return self.instruction.execute(interpreter)
 
+    def __str__(self):
+        return f"{self.label}: {self.instruction}"
+
 class AssignmentInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
@@ -101,6 +110,9 @@ class AssignmentInstruction(Instruction):
         else:
             print(tokens)
             assert False
+
+    def __str__(self):
+        return f"{self.variable.name} = {self.value}"
 
 class BooleanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -112,11 +124,17 @@ class BooleanInstruction(Instruction):
         else:
             self.value = None
 
+    def __str__(self):
+        return f"BOOLEAN {self.name}"
+
 class CallInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 1
         self.procedure = tokens[0]
+
+    def __str__(self):
+        return f"CALL {self.procedure}"
 
 class ScanInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -141,7 +159,8 @@ class ScanInstruction(Instruction):
         assert i == len(tokens)
 
 class DrScanInstruction(ScanInstruction):
-    pass
+    def __str__(self):
+        return f"DRSCAN {self.length}"
 
 class DrStopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -149,10 +168,16 @@ class DrStopInstruction(Instruction):
         assert len(tokens) == 1
         self.state = tokens[0].state
 
+    def __str__(self):
+        return f"IRSTOP {self.state}"
+
 class ExitInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         self.exit_code = tokens[0]
+
+    def __str__(self):
+        return f"EXIT {self.exit_code}"
 
 class ExportInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -168,16 +193,25 @@ class FrequencyInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         self.frequency = tokens[0]
 
+    def __str__(self):
+        return f"FREQUENCY {self.frequency}"
+
 class GotoInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         self.label = tokens[1]
+
+    def __str__(self):
+        return f"GOTO {self.label}"
 
 class IfInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         self.condition = tokens[0]
         self.instruction = tokens[1]
+
+    def __str__(self):
+        return f"IF {self.condition} THEN {self.instruction}"
 
 class IntegerInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -203,8 +237,12 @@ class IntegerInstruction(Instruction):
         else:
             return f"<Integer {self.name}[{self.length}]>"
 
+    def __str__(self):
+        return f"INTEGER {self.name}"
+
 class IrScanInstruction(ScanInstruction):
-    pass
+    def __str__(self):
+        return f"IRSCAN {self.length}"
 
 class IrStopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -212,21 +250,26 @@ class IrStopInstruction(Instruction):
         assert len(tokens) == 1
         self.state = tokens[0].state
 
+    def __str__(self):
+        return f"IRSTOP {self.state}"
+
 class PopInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         if len(tokens) == 1:
             self.variable = tokens[0]
         else:
-            print(tokens)
             assert False
+
+    def __str__(self):
+        return f"POP {self.variable}"
 
 class PrintInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         self.parts = tokens
 
-    def __repr__(self):
+    def __str__(self):
         return f"PRINT {', '.join(str(s) for s in self.parts)}"
 
 class PushInstruction(Instruction):
@@ -234,6 +277,9 @@ class PushInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 1
         self.value = tokens[0]
+
+    def __str__(self):
+        return f"PUSH {self.value}"
 
 class StateConvert:
     def __init__(self,  s, loc, tokens):
@@ -278,6 +324,9 @@ class StateInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         self.states = [token.state for token in tokens]
 
+    def __str__(self):
+        return f"STATE {', '.join(str(s) for s in self.states)}"
+
 class WaitType:
     def __init__(self,  s, loc, tokens):
         self.usec = self.cycles = Int(0)
@@ -291,6 +340,9 @@ class WaitType:
         else:
             assert False
 
+    def __str__(self):
+        return f"{self.cycles} CYCLES {self.usec} USEC"
+
 class TRSTInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
@@ -301,6 +353,9 @@ class TRSTInstruction(Instruction):
             self.wait_usec = tokens[0].usec
         else:
             assert False
+
+    def __str__(self):
+        return f"TRST {self.wait_cycles} CYCLES {self.wait_usec} USEC"
 
 class WaitInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -330,6 +385,15 @@ class WaitInstruction(Instruction):
 
         assert i == len(tokens)
 
+    def __str__(self):
+        r = "WAIT"
+        if not self.wait_state is None:
+            r += f" {self.wait_state}"
+        r += f" {self.wait_cycles} CYCLES {self.wait_usec} USEC"
+        if not self.wait_state is None:
+            r += f" {self.end_state}"
+        return r
+
 class ForInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
@@ -339,11 +403,17 @@ class ForInstruction(Instruction):
         self.end = tokens[2]
         self.step = tokens[3] if len(tokens) == 4 else Int(1)
 
+    def __str__(self):
+        return f"FOR {self.var} = {self.start}..{self.end} STEP {self.step}"
+
 class NextInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
         assert len(tokens) == 1
         self.var = tokens[0]
+
+    def __str__(self):
+        return f"NEXT {self.var}"
 
 class ScanModifierInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
@@ -379,9 +449,15 @@ class ProcedureInstruction(Instruction):
     def __repr__(self):
         return f"<Procedure {self.name}>"
 
+    def __str__(self):
+        return f"PROCEDURE {self.name}"
+
 class EndProcedureInstruction(Instruction):
     def __init__(self,  s, loc, tokens):
         Instruction.__init__(self, s, loc, tokens)
+
+    def __str__(self):
+        return f"ENDPROC"
 
 class DataInstruction(Instruction):
     def __init__(self, s, loc, tokens):
@@ -389,12 +465,12 @@ class DataInstruction(Instruction):
         Instruction.__init__(self, s, loc, tokens)
         self.name = tokens[0]
 
-    def __repr__(self):
-        return f"<Data {self.name}>"
+    def __str__(self):
+        return f"DATA {self.name}"
 
 class EndDataInstruction(Instruction):
-    def __repr__(self):
-        return f"<EndData>"
+    def __str__(self):
+        return f"<ENDDATA>"
 
 class Crc:
     def __init__(self,  s, loc, tokens):
@@ -425,6 +501,9 @@ class Crc:
             return "<Crc (correct)>"
         else:
             return "<Crc (incorrect)>"
+
+    def __str__(self):
+        return f"CRC {self.expected:04x}"
 
 class StaplFile:
     """STAPL parser"""

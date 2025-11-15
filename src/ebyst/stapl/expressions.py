@@ -85,6 +85,9 @@ class BoolArrayParser(Evaluatable):
 
         return BoolArray(self.ba)
 
+    def __str__(self):
+        return self.s
+
 class IntParser(Evaluatable):
     def __init__(self, _s, _loc, tokens):
         assert len(tokens) == 1
@@ -95,6 +98,9 @@ class IntParser(Evaluatable):
             return Any(self.v)
         else:
             return Int(self.v)
+
+    def __str__(self):
+        return str(self.v)
 
 class Function(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
@@ -199,7 +205,7 @@ class Expression(Evaluatable):
             print(self.v)
             assert False
 
-    def __repr__(self):
+    def __str__(self):
         return "(" + "".join([str(v) for v in self.v]) + ")"
 
     @classmethod
