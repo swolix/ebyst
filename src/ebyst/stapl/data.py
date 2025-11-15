@@ -264,7 +264,7 @@ class IntArray(list, Array):
             else:
                 raise ValueError(f"Can't convert {x} to Int")
 
-    def __getitem__(self, i):
+    def __getitem__(self, i): # type: ignore
         if isinstance(i, int):
             return Int(super().__getitem__(i))
         elif isinstance(i, slice):
