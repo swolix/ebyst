@@ -58,14 +58,14 @@ class StaplInterpreter:
             assert not variable.first is None
             first = int(variable.first.evaluate(self.state.scope))
             last = int(variable.last.evaluate(self.state.scope))
-            logger.debug(f"Setting {variable.name}[{first}:{last}] to {value}...")
+            logger.debug("Setting %s[%d:%d] to %s", variable.name, first, last, value)
             self.state.scope[variable.name].assign(slice(first, last), value)
         elif not variable.first is None:
             first = int(variable.first.evaluate(self.state.scope))
-            logger.debug(f"Setting {variable.name}[{first}] to {value}...")
+            logger.debug("Setting %s[%d] to %s", variable.name, first, value)
             self.state.scope[variable.name].assign(first, value)
         else:
-            logger.debug(f"Setting {variable.name} to {value}...")
+            logger.debug("Setting %s to %s", variable.name, value)
             self.state.scope[variable.name].assign(value)
 
     def execute(self, instruction=None):
@@ -75,7 +75,7 @@ class StaplInterpreter:
             instruction = self.stapl.statements[self.state.pc].instruction
             self.state.pc += 1
 
-        logger.debug(f"{instruction.line}: {instruction}")
+        logger.debug("%d: %s", instruction.line, instruction)
 
         if isinstance(instruction, AssignmentInstruction):
             self._assign(instruction.variable, instruction.value.evaluate(self.state.scope))
@@ -93,7 +93,7 @@ class StaplInterpreter:
                     v = BoolArray([0] * instruction.length)
                 var = ArrayVariable(v)
             self.state.scope[instruction.name] = var
-            logger.debug(f"Setting {instruction.name} to {v}...")
+            logger.debug("Setting %s to %s...", instruction.name, v)
         elif isinstance(instruction, CallInstruction):
             self.call_stack.append(self.state)
             self.state = StaplInterpreter.State(self.stapl.procedures[instruction.procedure], instruction.procedure)
@@ -173,7 +173,7 @@ class StaplInterpreter:
                         v[i] = instruction.value[i].evaluate(self.state.scope)
                 var = ArrayVariable(v)
             self.state.scope[instruction.name] = var
-            logger.debug(f"Setting {instruction.name} to {v}...")
+            logger.debug("Setting %s to %s...", instruction.name, v)
         elif isinstance(instruction, IrScanInstruction):
             in_array = instruction.data_array.evaluate(self.state.scope)
             length = int(instruction.length.evaluate(self.state.scope))
@@ -271,9 +271,9 @@ class StaplInterpreter:
         self.dr_stop = State.RUN_TEST_IDLE
 
         for name, pc in self.stapl.data_blocks.items():
-            logger.debug(f"Initializing {name}...")
+            logger.debug("Initializing %s...", name)
             self.data_scopes[name] = self._run_procedure(pc).scope
-            logger.debug(f"Data {name} initialized")
+            logger.debug("Data %s initialized", name)
 
         logger.info(f"Running action {action}...")
         try:
