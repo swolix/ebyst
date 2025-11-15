@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import logging
 import asyncio
-import time
 import random
 
 from bitarray import bitarray

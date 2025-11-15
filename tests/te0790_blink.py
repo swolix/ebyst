@@ -2,9 +2,6 @@
 import logging
 import asyncio
 import time
-from bitarray import bitarray
-from bitarray.util import int2ba
-from pyftdi.ftdi import Ftdi
 
 import ebyst
 

@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 import logging
-import random
-
-from bitarray import bitarray
 
 import ebyst
 

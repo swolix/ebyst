@@ -2,8 +2,6 @@
 import logging
 import random
 
-from bitarray import bitarray
-
 import ebyst
 
 logger = logging.getLogger(__name__)
