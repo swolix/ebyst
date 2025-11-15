@@ -131,7 +131,7 @@ class Function(Evaluatable):
 
 class Expression(Evaluatable):
     def __init__(self,  _s, _loc, tokens):
-        self.v = tokens
+        self.v = list(tokens)
 
     def optimize(self):
         try:
