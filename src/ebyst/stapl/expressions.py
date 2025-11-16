@@ -20,7 +20,7 @@
 import pyparsing as pp
 import re
 from .data import Evaluatable, Int, Bool, BoolArray, Any, String, VariableScope
-from . import aca # type: ignore
+from . import aca, errors # type: ignore
 from bitarray import bitarray
 from bitarray.util import hex2ba, int2ba, ba2int
 
@@ -43,18 +43,14 @@ class VariableRef(Evaluatable):
             assert False
 
     def evaluate(self, scope=VariableScope()):
-        try:
-            variable = scope[self.name]
-        except KeyError:
-            raise KeyError(f"Variable {self.name} not defined")
+        variable = scope[self.name]
+        if not self.slice_end is None:
+            assert not self.slice_start is None
+            return variable.evaluate(scope)[slice(int(self.slice_start.evaluate(scope)), int(self.slice_end.evaluate(scope)))]
+        elif not self.slice_start is None:
+            return variable.evaluate(scope)[int(self.slice_start.evaluate(scope))].evaluate(scope)
         else:
-            if not self.slice_end is None:
-                assert not self.slice_start is None
-                return variable.evaluate(scope)[slice(int(self.slice_start.evaluate(scope)), int(self.slice_end.evaluate(scope)))]
-            elif not self.slice_start is None:
-                return variable.evaluate(scope)[int(self.slice_start.evaluate(scope))].evaluate(scope)
-            else:
-                return variable.evaluate(scope)
+            return variable.evaluate(scope)
 
     def __str__(self):
         if not self.slice_end is None:
@@ -137,7 +133,7 @@ class Expression(Evaluatable):
     def optimize(self):
         try:
             return self.evaluate()
-        except KeyError:
+        except errors.VariableNotDefined:
             if len(self.v) == 1:
                 return self.v[0].optimize()
             else:

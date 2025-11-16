@@ -27,10 +27,11 @@ from .stapl import (AssignmentInstruction, BooleanInstruction, CallInstruction, 
                     IrStopInstruction, NextInstruction, PopInstruction, PostDrInstruction, PostIrInstruction,
                     PreDrInstruction, PreIrInstruction, PrintInstruction, ProcedureInstruction, FrequencyInstruction,
                     PushInstruction, StateInstruction, TRSTInstruction, WaitInstruction)
+from . import errors
 
 logger = logging.getLogger(__name__)
 
-class StaplExitCode(Exception):
+class StaplExitCode(errors.StaplError):
     def __init__(self, code=0):
         self.code = code
 
@@ -121,7 +122,7 @@ class StaplInterpreter:
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.dr_stop = instruction.state
             else:
-                raise Exception("Invalid state for DRSTOP")
+                raise errors.InvalidState(instruction.state.name)
         elif isinstance(instruction, EndDataInstruction):
             return False
         elif isinstance(instruction, EndProcedureInstruction):
@@ -153,7 +154,7 @@ class StaplInterpreter:
                 assert not self.state.procedure is None
                 self.state.pc = self.stapl.labels[self.state.procedure][instruction.label]
             except KeyError:
-                raise Exception(f"Label {instruction.label} not found")
+                raise errors.LabelNotDefined(instruction.label)
         elif isinstance(instruction, IfInstruction):
             v = instruction.condition.evaluate(self.state.scope)
             if Bool(v):
@@ -178,7 +179,7 @@ class StaplInterpreter:
             in_array = instruction.data_array.evaluate(self.state.scope)
             length = int(instruction.length.evaluate(self.state.scope))
             if len(in_array) < length:
-                raise Exception(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
+                raise errors.StaplError(f"Instruction array of size {len(in_array)} doesn't match length {instruction.length}")
             if len(in_array) != length:
                 in_array = in_array[length-1:0]
             out_array = self.ctl.ir_scan(in_array.to_bitarray(), self.ir_stop)
@@ -196,13 +197,13 @@ class StaplInterpreter:
             if instruction.state in (State.TEST_LOGIC_RESET, State.RUN_TEST_IDLE, State.PAUSE_IR, State.PAUSE_DR):
                 self.ir_stop = instruction.state
             else:
-                raise Exception("Invalid state for IRSTOP")
+                raise errors.InvalidState(instruction.state.name)
         elif isinstance(instruction, NextInstruction):
             if len(self.state.loop_stack) == 0:
-                raise Exception("NEXT without FOR")
+                raise errors.StaplError("NEXT without FOR")
             var, step, end, first_pc = self.state.loop_stack[-1]
             if instruction.var != var:
-                raise Exception(f"NEXT variable {instruction.var} doesn't match FOR variable {var}")
+                raise errors.StaplError(f"NEXT variable {instruction.var} doesn't match FOR variable {var}")
             var = self.state.scope[var]
             cur = var.evaluate()
             if (Int(step) > 0 and cur < end) or (Int(step) < 0 and cur > end):
@@ -228,9 +229,9 @@ class StaplInterpreter:
                 proc = self.stapl.procedures.get(dep)
                 data = self.data_scopes.get(dep)
                 if (proc is None) and (data is None):
-                    raise Exception("Dependency {dep} not found for procedure {instruction.name}")
+                    raise errors.StaplError("Dependency {dep} not found for procedure {instruction.name}")
                 elif not ((proc is None) or (data is None)):
-                    raise Exception("Dependency {dep} is ambiguous for procedure {instruction.name}")
+                    raise errors.StaplError("Dependency {dep} is ambiguous for procedure {instruction.name}")
                 if not data is None:
                     self.state.scope.update(data)
         elif isinstance(instruction, PushInstruction):
@@ -261,7 +262,11 @@ class StaplInterpreter:
         self.state = StaplInterpreter.State(pc, procedure)
         done = False
         while not done:
-            done = not self.execute()
+            try:
+                done = not self.execute()
+            except errors.StaplError as e:
+                e.pc = pc
+                raise
         state = self.state
         self.state = None
         return state
@@ -283,17 +288,20 @@ class StaplInterpreter:
         try:
             action = self.stapl.actions[action]
         except KeyError:
-            raise KeyError(f"Action {action} not found")
+            raise errors.StaplError(f"Action {action} not found") from None
         for procedure, opt in action.procedures:
-            try:
-                if opt in which:
-                    self._run_procedure(self.stapl.procedures[procedure], procedure)
-            except KeyError:
-                raise KeyError(f"Procedure {procedure} not found")
-            except StaplExitCode as e:
-                if e.code == 0:
-                    break
+            if opt in which:
+                try:
+                    pc = self.stapl.procedures[procedure]
+                except KeyError:
+                    raise errors.StaplError(f"Procedure {procedure} not found") from None
                 else:
-                    raise
+                    try:
+                        self._run_procedure(pc, procedure)
+                    except StaplExitCode as e:
+                        if e.code == 0:
+                            break
+                        else:
+                            raise
         logger.info(f"Action completed")
 

@@ -20,8 +20,14 @@
 from binascii import hexlify
 from bitarray import bitarray
 
+from . import errors
+
 class VariableScope(dict):
-    pass
+    def __getitem__(self, key: str):
+        try:
+            return super().__getitem__(key)
+        except KeyError:
+            raise errors.VariableNotDefined(key) from None
 
 class Evaluatable:
     def evaluate(self, scope=VariableScope()):
@@ -92,7 +98,7 @@ class Int(Evaluatable):
         elif isinstance(v, Any) or isinstance(v, Int):
             self.v = v.v
         else:
-            raise ValueError(f"Could not convert {repr(v)} to Int")
+            raise errors.StaplValueError(f"Could not convert {repr(v)} to Int")
 
     def evaluate(self, scope=VariableScope()):
         return self
@@ -172,7 +178,7 @@ class Bool(Evaluatable):
         elif isinstance(v, bitarray) and len(v) == 1:
             self.v = 1 if v[0] else 0
         else:
-            raise ValueError(f"Could not convert {repr(v)} to Bool")
+            raise errors.StaplValueError(f"Could not convert {repr(v)} to Bool")
 
     def evaluate(self, scope=VariableScope()):
         return self
@@ -213,7 +219,7 @@ class Any(Int):
         if isinstance(v, int) or isinstance(v, str) or isinstance(v, Any):
             self.v = int(v)
         else:
-            raise ValueError(f"Could not convert {repr(v)} to Any")
+            raise errors.StaplValueError(f"Could not convert {repr(v)} to Any")
 
     def evaluate(self, scope=VariableScope()):
         return self
@@ -262,7 +268,7 @@ class IntArray(list, Array):
             elif isinstance(x, Int):
                 self.append(x)
             else:
-                raise ValueError(f"Can't convert {x} to Int")
+                raise errors.StaplValueError(f"Can't convert {x} to Int")
 
     def __getitem__(self, i): # type: ignore
         if isinstance(i, int):
@@ -275,28 +281,31 @@ class IntArray(list, Array):
             else:
                 return IntArray(super().__getitem__(slice(i.start, i.stop-1 if i.stop > 0 else None, -1)))
         else:
-            raise TypeError()
+            raise TypeError(f"Invalid type {type(i)} for slice")
 
     def __setitem__(self, i, v):
         if i is None:
             if not isinstance(v, IntArray):
-                raise ValueError(f"Can't assign {type(v)} to integer array")
+                raise errors.StaplValueError(f"Can't assign {type(v)} to integer array")
             super().__setitem__(slice(0, len(self)), v)
         elif isinstance(i, int):
             if not isinstance(v, Int):
-                raise ValueError(f"Can't assign {v} to integer array element")
+                raise errors.StaplValueError(f"Can't assign {v} to integer array element")
             super().__setitem__(i, v)
         elif isinstance(i, slice):
             assert i.step is None
             if not isinstance(v, IntArray):
-                raise ValueError(f"Can't assign {type(v)} to integer array")
+                TypeError(f"Can't assign {type(v)} to integer array")
 
-            if i.start <= i.stop:
-                super().__setitem__(slice(i.start, i.stop+1), v)
-            else:
-                super().__setitem__(slice(i.start, i.stop-1 if i.stop > 0 else None, -1), v)
+            try:
+                if i.start <= i.stop:
+                    super().__setitem__(slice(i.start, i.stop+1), v)
+                else:
+                    super().__setitem__(slice(i.start, i.stop-1 if i.stop > 0 else None, -1), v)
+            except (TypeError, ValueError) as e:
+                raise errors.StaplValueError(str(e)) from None
         else:
-            raise TypeError()
+            raise TypeError(f"Invalid type {type(i)} for slice")
 
     def evaluate(self, scope=VariableScope()):
         return self
@@ -320,7 +329,7 @@ class BoolArray(Array):
                 x = self.v.__getitem__(slice(i.stop, i.start+1))
                 return BoolArray(x)
         else:
-            assert False
+            raise TypeError(f"Invalid type {type(i)} for slice")
 
     def __setitem__(self, i, v):
         if i is None:
@@ -330,11 +339,11 @@ class BoolArray(Array):
             if isinstance(v, Bool) or isinstance(v, Any):
                 self.v.__setitem__(i, v.v)
             else:
-                raise ValueError(f"Can't assign {v} to boolean array element")
+                raise errors.StaplValueError(f"Can't assign {v} to boolean array element")
         elif isinstance(i, slice):
             assert i.step is None
             if not isinstance(v, BoolArray):
-                raise ValueError(f"Can't assign {type(v)} to boolean array")
+                raise errors.StaplValueError(f"Can't assign {type(v)} to boolean array")
 
             slice_length = i.stop - i.start + 1 if i.stop > i.start else i.start - i.stop + 1
             if len(v) > slice_length:
@@ -347,7 +356,7 @@ class BoolArray(Array):
             else:
                 self.v.__setitem__(slice(i.stop, i.start+1), v.v)
         else:
-            raise TypeError()
+            raise TypeError(f"Invalid type {type(i)} for slice")
 
     def __eq__(self, other):
         if not isinstance(other, BoolArray): return False

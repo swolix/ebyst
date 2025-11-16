@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import unittest
 from ebyst.stapl.data import Int, Bool, Any, IntArray, BoolArray, Variable, ArrayVariable
+from ebyst.stapl import errors
 
 class TestCalc(unittest.TestCase):
     def test_bool(self):
@@ -51,7 +52,7 @@ class TestCalc(unittest.TestCase):
         self.assertEqual(a.evaluate(), Bool(True))
         a.assign(Bool(False))
         self.assertEqual(a.evaluate(), Bool(False))
-        self.assertRaises(ValueError, lambda: a.assign(Int(4)))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(Int(4)))
 
     def test_int(self):
         self.assertEqual(Int(1), Int(1))
@@ -114,17 +115,17 @@ class TestCalc(unittest.TestCase):
         self.assertTrue(Int(1) <= Int(4))
         self.assertIsInstance(Int(4) <= Int(1), Bool)
 
-        self.assertRaises(ValueError, lambda: Int(True))
-        self.assertRaises(ValueError, lambda: Int(Bool(True)))
-        self.assertRaises(ValueError, lambda: Int(False))
-        self.assertRaises(ValueError, lambda: Int(Bool(False)))
+        self.assertRaises(errors.StaplValueError, lambda: Int(True))
+        self.assertRaises(errors.StaplValueError, lambda: Int(Bool(True)))
+        self.assertRaises(errors.StaplValueError, lambda: Int(False))
+        self.assertRaises(errors.StaplValueError, lambda: Int(Bool(False)))
 
     def test_int_var(self):
         a = Variable(Int(1))
         self.assertEqual(a.evaluate(), Int(1))
         a.assign(Int(3))
         self.assertEqual(a.evaluate(), Int(3))
-        self.assertRaises(ValueError, lambda: a.assign(Bool(True)))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(Bool(True)))
 
     def test_any(self):
         self.assertEqual(Any(1), Any(1))
@@ -149,7 +150,7 @@ class TestCalc(unittest.TestCase):
         self.assertIsInstance(Int(a), Int)
 
         a = Any(2)
-        self.assertRaises(ValueError, lambda: Bool(a))
+        self.assertRaises(errors.StaplValueError, lambda: Bool(a))
         self.assertIsInstance(Int(a), Int)
 
         self.assertEqual(Any(1), Bool(1))
@@ -161,7 +162,7 @@ class TestCalc(unittest.TestCase):
         self.assertEqual(Int(2), Any(2))
         self.assertNotEqual(Bool(1), Any(0))
         self.assertNotEqual(Int(1), Any(0))
-        self.assertRaises(ValueError, lambda: Bool(1) == Any(2))
+        self.assertRaises(errors.StaplValueError, lambda: Bool(1) == Any(2))
 
     def test_int_array(self):
         a = IntArray([1, 2, 3, 4])
@@ -186,7 +187,7 @@ class TestCalc(unittest.TestCase):
     def test_int_array_var(self):
         a = ArrayVariable(IntArray([1, 2, 3, 4]))
         self.assertEqual(a.evaluate(), IntArray([1, 2, 3, 4]))
-        self.assertRaises(ValueError, lambda: a.assign(BoolArray("110011")))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(BoolArray("110011")))
         a.assign(IntArray([5, 6, 7, 8]))
         self.assertEqual(a.evaluate(), IntArray([5, 6, 7, 8]))
         a.assign(slice(1, 2), IntArray([9, 10]))
@@ -195,9 +196,9 @@ class TestCalc(unittest.TestCase):
         self.assertEqual(a.evaluate(), IntArray([5, 9, 10, 11]))
         a.assign(slice(2, 0), IntArray([12, 13, 14]))
         self.assertEqual(a.evaluate(), IntArray([14, 13, 12, 11]))
-        self.assertRaises(ValueError, lambda: a.assign(slice(2, 0), IntArray([15])))
-        self.assertRaises(ValueError, lambda: a.assign(1, IntArray([15])))
-        self.assertRaises(ValueError, lambda: a.assign(slice(2, 0), Int(15)))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(slice(2, 0), IntArray([15])))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(1, IntArray([15])))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(slice(2, 0), Int(15)))
 
     def test_bool_array(self):
         a = BoolArray("101011")
@@ -225,7 +226,7 @@ class TestCalc(unittest.TestCase):
     def test_bool_array_var(self):
         a = ArrayVariable(BoolArray("101011"))
         self.assertEqual(a.evaluate(), BoolArray("101011"))
-        self.assertRaises(ValueError, lambda: a.assign(IntArray([1, 2, 3, 4, 5, 6])))
+        self.assertRaises(errors.StaplValueError, lambda: a.assign(IntArray([1, 2, 3, 4, 5, 6])))
         a.assign(BoolArray("110011"))
         self.assertEqual(a.evaluate(), BoolArray("110011"))
         a = ArrayVariable(BoolArray("000000"))
