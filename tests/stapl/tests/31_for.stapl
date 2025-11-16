@@ -1,0 +1,56 @@
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "2";
+NOTE "TEST" "3";
+
+NOTE "TEST" "10";
+NOTE "TEST" "12";
+NOTE "TEST" "14";
+
+NOTE "TEST" "20";
+NOTE "TEST" "23";
+NOTE "TEST" "26";
+NOTE "TEST" "29";
+
+NOTE "TEST" "40";
+NOTE "TEST" "38";
+NOTE "TEST" "36";
+NOTE "TEST" "34";
+
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "2";
+NOTE "TEST" "1";
+NOTE "TEST" "2";
+NOTE "TEST" "3";
+NOTE "TEST" "2";
+NOTE "TEST" "3";
+NOTE "TEST" "4";
+
+ACTION TEST = DO_TEST;
+
+PROCEDURE DO_TEST;
+    FOR i = 0 TO 3;
+        EXPORT "TEST", i;
+    NEXT i;
+    FOR i = 0 TO 4 STEP 2;
+        EXPORT "TEST", i + 10;
+    NEXT i;
+    INTEGER a = 0;
+    INTEGER b = 10;
+    FOR i = a TO b;
+        EXPORT "TEST", i + 20;
+        i = i + 2;
+    NEXT i;
+    FOR i = 10 TO 5 step -2;
+        EXPORT "TEST", i + 30;
+    NEXT i;
+
+    FOR i = 0 to 2;
+        FOR j = 0 to 2;
+            EXPORT "TEST", i+j;
+        NEXT j;
+    NEXT i;
+ENDPROC;
+
+CRC 0;

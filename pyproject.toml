@@ -2,9 +2,9 @@
 name = "ebyst"
 version = "0.3.6"
 dependencies = [
-    "pyftdi",
-    "bitarray",
-    "pyparsing",
+    "pyftdi==0.57.1",
+    "bitarray==3.8.0",
+    "pyparsing==3.2.5",
 ]
 authors = [
   { name="Sijmen Woutersen", email="sijmen.woutersen@gmail.com" },
@@ -21,6 +21,9 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/swolix/ebyst"
 Issues = "https://github.com/swolix/ebyst/issues"
+
+[project.scripts]
+staplay = "ebyst.staplay:main"
 
 [build-system]
 requires = ["hatchling"]

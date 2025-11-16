@@ -359,6 +359,9 @@ class TapController:
         self.driver.transmit_tms_str(tms, tdi)
         self.state = state
 
+    def export(self, key, value):
+        print(f"EXPORT {key}={value}")
+
     def wait(self, cycles: int, usec: int=0):
         """Wait for until both (tck-)cycles and usec are satisfied"""
         if self.state in (State.RUN_TEST_IDLE, State.PAUSE_DR, State.PAUSE_IR):
@@ -367,7 +370,7 @@ class TapController:
             self.driver.transmit_tms_str(bitarray("1" * cycles, 'little'))
         else:
             raise Exception("{self.state} is not a wait state")
-        if usec: time.sleep(usec * 1e-6)
+        if usec > 500: time.sleep(usec * 1e-6)
 
     def ir_scan(self, ir: bitarray, end_state: State | None=None):
         if ir.endian != 'little': raise ValueError("ir must be little endian bitarray")

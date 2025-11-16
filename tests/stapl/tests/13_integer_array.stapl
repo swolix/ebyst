@@ -1,0 +1,38 @@
+NOTE "TEST" "8";
+NOTE "TEST" "4";
+NOTE "TEST" "1";
+NOTE "TEST" "2";
+NOTE "TEST" "2";
+NOTE "TEST" "2";
+NOTE "TEST" "2";
+NOTE "TEST" "8";
+
+NOTE "TEST" "8";
+NOTE "TEST" "4";
+NOTE "TEST" "2";
+NOTE "TEST" "1";
+
+ACTION TEST = DO_TEST;
+
+PROCEDURE DO_TEST;
+    INTEGER array[4] = 1, 2, 4, 8;
+    EXPORT "TEST", array[3];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[0];
+    EXPORT "TEST", array[1];
+    array[2] = array[1];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[2];
+    array[0..1] = array[2..3];
+    EXPORT "TEST", array[0];
+    EXPORT "TEST", array[1];
+
+    INTEGER array2[4] = 1, 2, 4, 8;
+    array[0..3] = array2[3..0];
+    EXPORT "TEST", array[0];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[3];
+ENDPROC;
+
+CRC 0;

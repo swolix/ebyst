@@ -1,0 +1,42 @@
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
+NOTE "TEST" "0";
+
+ACTION TEST = DO_TEST;
+
+PROCEDURE DO_TEST;
+    BOOLEAN i = 0;
+    BOOLEAN j = 1;
+    BOOLEAN k = 0 || 1;
+    BOOLEAN l = 1 && 1;
+    BOOLEAN m = !0;
+    BOOLEAN n = !0 && 1 || 0;
+    BOOLEAN o = 1 == 2;
+    BOOLEAN p = 1 != 2;
+    BOOLEAN q = 4 > 3;
+    BOOLEAN p = 4 >= 3;
+    BOOLEAN r = 4 < 3;
+    BOOLEAN s = 4 <= 3;
+
+    EXPORT "TEST", i;
+    EXPORT "TEST", j;
+    EXPORT "TEST", k;
+    EXPORT "TEST", l;
+    EXPORT "TEST", m;
+    EXPORT "TEST", n;
+    EXPORT "TEST", o;
+    EXPORT "TEST", p;
+    EXPORT "TEST", q;
+    EXPORT "TEST", r;
+    EXPORT "TEST", s;
+ENDPROC;
+
+CRC 0;

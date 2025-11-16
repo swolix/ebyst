@@ -28,6 +28,12 @@ jobs:
     - name: BSDL test
       run: ./test_bsdl.py
       working-directory: tests
+    - name: STAPL data model test
+      run: ./test_stapl_data.py
+      working-directory: tests
+    - name: STAPL test
+      run: ./test_stapl.py
+      working-directory: tests
     - name: Chain test
       run: ./test_chain.py
       working-directory: tests

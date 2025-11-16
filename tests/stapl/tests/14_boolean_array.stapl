@@ -1,0 +1,75 @@
+NOTE "TEST" "1";
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "0";
+
+NOTE "TEST" "0";
+NOTE "TEST" "0";
+NOTE "TEST" "1";
+NOTE "TEST" "1";
+
+NOTE "TEST" "0a";
+NOTE "TEST" "04d2";
+NOTE "TEST" "04d2";
+NOTE "TEST" "4b20";
+NOTE "TEST" "fffffffc";
+
+NOTE "TEST" "-4";
+NOTE "TEST" "65532";
+
+NOTE "TEST" "6362616665646c6b6a696867666564636261666564636261";
+NOTE "TEST" "00016f";
+
+ACTION TEST = DO_TEST;
+
+PROCEDURE DO_TEST;
+    BOOLEAN array[4] = #1011;
+    EXPORT "TEST", array[3];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[0];
+    array[1] = array[2];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[2];
+    array[1..0] = array[3..2];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[0];
+
+    BOOLEAN array2[4] = #1100;
+    array[0..3] = array2[3..0];
+    EXPORT "TEST", array[3];
+    EXPORT "TEST", array[2];
+    EXPORT "TEST", array[1];
+    EXPORT "TEST", array[0];
+
+    BOOLEAN array3[4] = $a;
+    EXPORT "TEST", array3;
+
+    INTEGER a = 1234;
+    BOOLEAN array4[16];
+    array4 = BOOL(a);
+    EXPORT "TEST", array4;
+    array4[15..0] = BOOL(a);
+    EXPORT "TEST", array4;
+    array4[0..15] = BOOL(a);
+    EXPORT "TEST", array4;
+
+    BOOLEAN array5[32] = BOOL(-4);
+    EXPORT "TEST", array5;
+
+    INTEGER b = INT(array5);
+    EXPORT "TEST", b;
+    INTEGER c = INT(array5[15..0]);
+    EXPORT "TEST", c;
+
+    BOOLEAN array[192] = @O00008Cn63PbPMRWpGBDgj6RV60;
+    EXPORT "TEST", array;
+    BOOLEAN array[12] = @30000uj000;
+    EXPORT "TEST", array;
+ENDPROC;
+
+CRC 0;

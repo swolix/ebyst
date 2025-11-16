@@ -1,0 +1,14 @@
+NOTE "TEST" "1A2B";
+NOTE "TEST" "3";
+NOTE "TEST" "B";
+
+ACTION TEST = DO_TEST;
+
+PROCEDURE DO_TEST;
+    PRINT "Hello", "world", "3", 4;
+    EXPORT "TEST", 1, "A", 2, "B";
+    EXPORT "TEST", 1 + 2;
+    EXPORT "TEST", CHR$(66);
+ENDPROC;
+
+CRC 0;

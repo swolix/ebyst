@@ -100,3 +100,9 @@ print(dev.pinmap['I'].get_value()) # should be 1
 await ctl.cycle()
 print(dev.pinmap['I'].get_value()) # should be 0
 ```
+
+# STAPL player
+ebyst comes with a basic stapl player called stapyl;
+```
+staplay ftdi://0x1514:0x2008:001UD001/1 polarfire.stapl READ_IDCODE
+```
