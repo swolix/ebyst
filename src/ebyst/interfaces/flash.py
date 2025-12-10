@@ -51,3 +51,33 @@ class MT25Q:
         cmd = bitarray("10011110" + 20 * "00000000")
         data = await self.spi.transfer(cmd)
         return data[8:].tobytes()
+
+class W25Q:
+    def __init__(self, ctl, CLK: Pin, CSn: Pin, DI: Pin, DO: Pin, RESETn: Pin=None, WPn: Pin=None, HOLDn: Pin=None):
+        self.ctl = ctl
+        self.WPn = WPn
+        self.RESETn = RESETn
+        self.HOLDn = HOLDn
+        self.spi = SPI(ctl, SCK=CLK, SSn=CSn, MOSI=DI, MISO=DO)
+
+    async def init(self):
+        if not self.RESETn is None:
+            self.RESETn.output_enable(True)
+            self.RESETn.set_value(0)
+        if not self.WPn is None:
+            self.WPn.output_enable(True)
+            self.WPn.set_value(1)
+        if not self.HOLDn is None:
+            self.HOLDn.output_enable(True)
+            self.HOLDn.set_value(1)
+        await self.ctl.cycle()
+        await self.spi.init()
+        await self.ctl.cycle()
+        if not self.RESETn is None:
+            self.RESETn.set_value(1)
+            await self.ctl.cycle()
+
+    async def read_id(self):
+        cmd = bitarray("10011111" + 3 * "00000000")
+        data = await self.spi.transfer(cmd)
+        return data[8:].tobytes()
