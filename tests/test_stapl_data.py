@@ -174,11 +174,15 @@ class TestCalc(unittest.TestCase):
         self.assertIsInstance(a[0], Int)
 
         b = a[1:2]
+        self.assertIsInstance(b, IntArray)
+        assert isinstance(b, IntArray)
         self.assertEqual(len(b), 2)
         self.assertEqual(b[0], Int(2))
         self.assertEqual(b[1], Int(3))
 
         c = a[3:1]
+        self.assertIsInstance(c, IntArray)
+        assert isinstance(c, IntArray)
         self.assertEqual(len(c), 3)
         self.assertEqual(c[0], Int(4))
         self.assertEqual(c[1], Int(3))
@@ -213,11 +217,14 @@ class TestCalc(unittest.TestCase):
 
         b = a[2:1]
         self.assertIsInstance(b, BoolArray)
+        assert isinstance(b, BoolArray)
         self.assertEqual(len(b), 2)
         self.assertEqual(b[1], Bool(0))
         self.assertEqual(b[0], Bool(1))
 
         c = a[0:3]
+        self.assertIsInstance(c, BoolArray)
+        assert isinstance(c, BoolArray)
         self.assertEqual(len(c), 4)
         self.assertEqual(c[3], Bool(1))
         self.assertEqual(c[2], Bool(1))
