@@ -20,7 +20,7 @@
 from binascii import hexlify
 from bitarray import bitarray
 
-from . import errors
+from . import errors # type: ignore
 
 class VariableScope(dict):
     def __getitem__(self, key: str):

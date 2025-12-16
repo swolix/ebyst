@@ -27,7 +27,7 @@ from .stapl import (AssignmentInstruction, BooleanInstruction, CallInstruction, 
                     IrStopInstruction, NextInstruction, PopInstruction, PostDrInstruction, PostIrInstruction,
                     PreDrInstruction, PreIrInstruction, PrintInstruction, ProcedureInstruction, FrequencyInstruction,
                     PushInstruction, StateInstruction, TRSTInstruction, WaitInstruction)
-from . import errors
+from . import errors # type: ignore
 
 logger = logging.getLogger(__name__)
 
