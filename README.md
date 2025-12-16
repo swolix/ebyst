@@ -106,3 +106,6 @@ ebyst comes with a basic stapl player called stapyl;
 ```
 staplay ftdi://0x1514:0x2008:001UD001/1 polarfire.stapl READ_IDCODE
 ```
+
+# Installation
+Releases are pushed to pypi, install via; `pip install ebyst`.
