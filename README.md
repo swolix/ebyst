@@ -27,7 +27,11 @@ dev.pinmap['O'].set_value(0)
 await ctl.cycle() # drive output
 await ctl.cycle() # sample input
 print(dev.pinmap['I'].get_value())
+```
+# Interfaces
+Ebyst supports various interfaces to test (connections with) other ICs connected to the UUT
 
+```python
 # I2C test
 i2c = ebyst.interfaces.I2C(dev.pinmap['PB9A'], dev.pinmap['PB4B'])
 await i2c.init()
@@ -42,6 +46,15 @@ print(f"{x:02x}")
 
 ctl.reset()
 ```
+
+Other interfaces (a.o.):
+* Memory (DDR3, DDR4, HyperRAM)
+* I2C
+* SPI (and various SPI Flashes)
+* MDI/O
+
+See `src/interfaces` for the complete list
+
 # Async
 The library uses `asyncio` to allow running multiple tests in parallel.
 When the loopback test and I2C test above are put in different tasks, they share the same boundary scan cycles,
