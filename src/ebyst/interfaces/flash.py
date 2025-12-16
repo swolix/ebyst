@@ -58,7 +58,7 @@ class W25Q:
         self.WPn = WPn
         self.RESETn = RESETn
         self.HOLDn = HOLDn
-        self.spi = SPI(ctl, SCK=CLK, SSn=CSn, MOSI=DI, MISO=DO)
+        self.spi = SPI(SCK=CLK, SSn=CSn, MOSI=DI, MISO=DO)
 
     async def init(self):
         if not self.RESETn is None:
