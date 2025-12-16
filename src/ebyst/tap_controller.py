@@ -182,7 +182,10 @@ class TapController:
 
     def add_device(self, device: Device):
         """Add device to chain"""
+        if not device.ctl is None:
+            raise Exception(f"Device already assigned to controller {device.ctl}")
         self.chain.append(device)
+        device.ctl = self
         self.chain.validated = False
 
     def validate_chain(self):

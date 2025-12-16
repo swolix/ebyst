@@ -191,6 +191,7 @@ class PinGroup(list):
 
 class Device:
     def __init__(self, irlen, max_freq=None, idcode=None, opcodes=None, cells=[]):
+        self.ctl = None
         self.irlen = irlen
         self.max_freq = max_freq
         self.idcode = idcode

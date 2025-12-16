@@ -14,16 +14,16 @@ from ebyst import Pin, PinGroup, DiffPin
 logger = logging.getLogger(__name__)
 
 
-async def leds(ctl, dev):
+async def leds(dev):
     LEDS = ['IO_H21', 'IO_H22', 'IO_F23', 'IO_C27', 'IO_D25', 'IO_C26', 'IO_B26', 'IO_F22']
     for i in range(10):
         for pin in LEDS + LEDS[::-1]:
             dev.pinmap[pin].output_enable()
             dev.pinmap[pin].set_value(1)
-            await ctl.cycle()
+            await dev.ctl.cycle()
             dev.pinmap[pin].set_value(0)
 
-async def flash(ctl, dev):
+async def flash(dev):
     pins = {
         'C':        dev.pinmap["IO_H19"],
         'Sn':       dev.pinmap["IO_A20"],
@@ -33,19 +33,19 @@ async def flash(ctl, dev):
         'DQ0':      dev.pinmap["IO_G19"],
         'DQ1':      dev.pinmap["IO_C18"],
     }
-    ctl.trace("flash.vcd", **pins)
-    flash = MT25Q(ctl, **pins)
+    dev.ctl.trace("flash.vcd", **pins)
+    flash = MT25Q(dev.ctl, **pins)
 
     await flash.init()
     print("Flash ID:", (await flash.read_id()).hex())
 
-async def mdio(ctl, dev):
+async def mdio(dev):
     pins = {
         'MDC':      dev.pinmap["IO_Y12"],
         'MDIO':     dev.pinmap["IO_Y13"],
     }
-    ctl.trace("mdio.vcd", **pins)
-    mdio = MDIO(ctl, **pins)
+    dev.ctl.trace("mdio.vcd", **pins)
+    mdio = MDIO(dev.ctl, **pins)
 
     # PHY ID
     for pin in ("IO_Y7", "IO_AA7", "IO_AA9"):
@@ -55,14 +55,14 @@ async def mdio(ctl, dev):
     # PHY RESET
     dev.pinmap["IO_U11"].output_enable()
     dev.pinmap["IO_U11"].set_value(0)
-    await ctl.cycle()
+    await dev.ctl.cycle()
     dev.pinmap["IO_U11"].set_value(1)
-    await ctl.cycle()
+    await dev.ctl.cycle()
 
     await mdio.init()
     print("PHY ID: 0x%04x %04x" % (await mdio.read(0, 2), await mdio.read(0, 3)))
 
-async def ddr3(ctl, dev):
+async def ddr3(dev):
     pins = {
         'DQ':       PinGroup([dev.pinmap["IO_AN22"], dev.pinmap["IO_AM24"], dev.pinmap["IO_AN21"], dev.pinmap["IO_AN24"],
                               dev.pinmap["IO_AP20"], dev.pinmap["IO_AP19"], dev.pinmap["IO_AP21"], dev.pinmap["IO_AN19"]]),
@@ -82,8 +82,8 @@ async def ddr3(ctl, dev):
         'WEn':      dev.pinmap["IO_AF24"],
         'RESETn':   dev.pinmap["IO_AG22"],
     }
-    ctl.trace("ddr3.vcd", **pins)
-    ddr3 = DDR3(ctl, **pins)
+    dev.ctl.trace("ddr3.vcd", **pins)
+    ddr3 = DDR3(dev.ctl, **pins)
 
     bank = bitarray("000", endian='little')
     row = bitarray("0000000000000000", endian='little')
@@ -108,7 +108,7 @@ async def ddr3(ctl, dev):
     else:
         print(f"DDR3: FAILED")
 
-async def ddr4(ctl, dev):
+async def ddr4(dev):
     pins_a = {
         'DQ':       PinGroup([dev.pinmap["IO_AG10"], dev.pinmap["IO_AE12"], dev.pinmap["IO_AF10"], dev.pinmap["IO_AF12"],
                               dev.pinmap["IO_AD10"], dev.pinmap["IO_AD13"], dev.pinmap["IO_AE10"], dev.pinmap["IO_AD14"]]),
@@ -206,22 +206,22 @@ async def ddr4(ctl, dev):
         'RESETn':   dev.pinmap["IO_AF7"],
     }
 
-    ctl.trace("ddr4.vcd", trace_all=True, **pins_a)
+    dev.ctl.trace("ddr4.vcd", trace_all=True, **pins_a)
 
     for pins in (pins_a, pins_b, pins_c, pins_d):
-        ddr4 = DDR4(ctl, **pins)
+        ddr4 = DDR4(dev.ctl, **pins)
         await ddr4.init()
         print("DDR4: Running connectivity test")
         await ddr4.test()
         print("DDR4: Done")
 
-async def clock(ctl, dev):
+async def clock(dev):
     CLK50 = dev.pinmap["IO_E25"]
     CLK50.output_enable(False)
-    ctl.trace("clock.vcd", trace_all=True, CLK50=CLK50)
+    dev.ctl.trace("clock.vcd", trace_all=True, CLK50=CLK50)
     ones = zeroes = 0
     for _ in range(100):
-        await ctl.cycle()
+        await dev.ctl.cycle()
         if CLK50.get_value():
             ones += 1
         else:
@@ -251,12 +251,12 @@ async def main():
     try:
         ctl.extest()
         async with asyncio.TaskGroup() as tg:
-            tg.create_task(leds(ctl, dev))
-            tg.create_task(flash(ctl, dev))
-            tg.create_task(mdio(ctl, dev))
-            tg.create_task(ddr3(ctl, dev))
-            tg.create_task(ddr4(ctl, dev))
-            tg.create_task(clock(ctl, dev))
+            tg.create_task(leds(dev))
+            tg.create_task(flash(dev))
+            tg.create_task(mdio(dev))
+            tg.create_task(ddr3(dev))
+            tg.create_task(ddr4(dev))
+            tg.create_task(clock(dev))
 
         ctl.extest_pulse()
         async with asyncio.TaskGroup() as tg:
