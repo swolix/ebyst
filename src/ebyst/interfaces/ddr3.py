@@ -100,8 +100,7 @@ class DDR3:
         self.RASn.set_value(1)
         self.CASn.set_value(1)
         self.WEn.set_value(1)
-        for CSn in self.CSn:
-            CSn.set_value(1)
+        self.CSn.set_value(1)
 
     async def init(self):
         self.task = asyncio.create_task(self.cycle_ck())
@@ -134,8 +133,7 @@ class DDR3:
         await self.cmd_cycle()
         await self.cmd_cycle()
         await self.cmd_cycle()
-        for CKE in self.CKE:
-            CKE.set_value(1)
+        self.CKE.set_value(1)
         await self.cmd_cycle()
 
         # mr2
@@ -173,11 +171,11 @@ class DDR3:
         """Read from active row"""
         r = []
         await self.cmd_cycle(CSn="00", CASn=0, BA=ba, A=ca)
-        
+
         for i in range(20):
             if self.DQS.get_value() == 0: break
             await self.ctl.cycle()
-        
+
         if self.DQS.get_value() == 1: raise Exception("Read timeout")
 
         for i in range(4):
@@ -197,7 +195,7 @@ class DDR3:
         await self.cmd_cycle(CSn="00", CASn=0, WEn=0, BA=ba, A=ca)
         for i in range(5):
             await self.cmd_cycle()
-            
+
         self.DQ.output_enable(True)
         self.DQS.output_enable(True)
         self.DQS.set_value(0xFF)
@@ -220,7 +218,7 @@ class DDR3:
 
         self.DQ.output_enable(False)
         self.DQS.output_enable(False)
-        
+
         for i in range(6): await self.cmd_cycle()
 
     async def precharge(self, ba=bitarray("000")):

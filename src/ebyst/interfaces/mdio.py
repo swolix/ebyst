@@ -23,7 +23,7 @@ from bitarray.util import int2ba, ba2int
 from ..device import Pin
 
 class MDIO:
-    def __init__(self, MDC: Pin, MDIO: Pin, RESETn: Pin=None):
+    def __init__(self, MDC: Pin, MDIO: Pin, RESETn: Pin|None=None):
         self.ctl = MDC.device.ctl
         self.MDC = MDC
         self.MDIO = MDIO

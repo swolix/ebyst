@@ -29,7 +29,6 @@ class HyperRAM:
         self.CSn = CSn
         self.RWDS = RWDS
         self.DQ = DQ
-        self.DQ.endian = 'little'
 
     async def init(self):
         self.CK.output_enable(True)

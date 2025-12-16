@@ -23,7 +23,8 @@ from ..device import Pin
 from .spi import SPI
 
 class MT25Q:
-    def __init__(self, C: Pin, Sn: Pin, DQ0: Pin, DQ1: Pin, RESETn: Pin=None, WPn: Pin=None, HOLDn: Pin=None):
+    def __init__(self, C: Pin, Sn: Pin, DQ0: Pin, DQ1: Pin,
+                 RESETn: Pin|None=None, WPn: Pin|None=None, HOLDn: Pin|None=None):
         self.ctl = C.device.ctl
         self.WPn = WPn
         self.RESETn = RESETn
@@ -53,7 +54,8 @@ class MT25Q:
         return data[8:].tobytes()
 
 class W25Q:
-    def __init__(self, ctl, CLK: Pin, CSn: Pin, DI: Pin, DO: Pin, RESETn: Pin=None, WPn: Pin=None, HOLDn: Pin=None):
+    def __init__(self, ctl, CLK: Pin, CSn: Pin, DI: Pin, DO: Pin,
+                 RESETn: Pin|None=None, WPn: Pin|None=None, HOLDn: Pin|None=None):
         self.ctl = ctl
         self.WPn = WPn
         self.RESETn = RESETn
