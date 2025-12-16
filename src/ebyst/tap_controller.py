@@ -372,7 +372,7 @@ class TapController:
         elif self.state in (State.TEST_LOGIC_RESET, ):
             self.driver.transmit_tms_str(bitarray("1" * cycles, 'little'))
         else:
-            raise Exception("{self.state} is not a wait state")
+            raise Exception(f"{self.state.name} is not a wait state")
         if usec > 500: time.sleep(usec * 1e-6)
 
     def ir_scan(self, ir: bitarray, end_state: State | None=None):
