@@ -212,6 +212,7 @@ class TestCalc(unittest.TestCase):
         self.assertIsInstance(a[0], Bool)
 
         b = a[2:1]
+        self.assertIsInstance(b, BoolArray)
         self.assertEqual(len(b), 2)
         self.assertEqual(b[1], Bool(0))
         self.assertEqual(b[0], Bool(1))
