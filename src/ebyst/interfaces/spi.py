@@ -22,8 +22,8 @@ from bitarray import bitarray
 from ..device import Pin
 
 class SPI:
-    def __init__(self, ctl, SCK: Pin, SSn: Pin, MOSI: Pin, MISO: Pin):
-        self.ctl = ctl
+    def __init__(self, SCK: Pin, SSn: Pin, MOSI: Pin, MISO: Pin):
+        self.ctl = SCK.device.ctl
         self.SCK = SCK
         self.SSn = SSn
         self.MOSI = MOSI

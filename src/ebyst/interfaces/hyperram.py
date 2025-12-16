@@ -22,8 +22,8 @@ from bitarray import bitarray
 from ..device import Pin, DiffPin, PinGroup
 
 class HyperRAM:
-    def __init__(self, ctl, CK: DiffPin, RESETn: Pin, CSn: Pin, RWDS: Pin, DQ: PinGroup):
-        self.ctl = ctl
+    def __init__(self, CK: DiffPin, RESETn: Pin, CSn: Pin, RWDS: Pin, DQ: PinGroup):
+        self.ctl = CK[0].device.ctl
         self.CK = CK
         self.RESETn = RESETn
         self.CSn = CSn

@@ -38,12 +38,16 @@ class Net:
     def __init__(self, name: str, ctls, driver: Pin | None, receivers:Pin | list[Pin],
                  bias: BiasResistor=BiasResistor.NONE):
         self.name = name
-        self.ctls = ctls
+        self.ctls = []
+        if not driver is None:
+            self.ctls.append(driver.device.ctl)
         self.driver = driver
         if isinstance(receivers, list):
             self.receivers = receivers
         else:
             self.receivers = [receivers]
+        for receiver in self.receivers:
+            self.ctls.append(receiver.device.ctl)
         self.bias = bias
 
     async def test(self):

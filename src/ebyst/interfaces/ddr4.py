@@ -48,7 +48,7 @@ from ..device import Pin, PinGroup, DiffPin
 
 
 class DDR4:
-    def __init__(self, ctl,
+    def __init__(self,
                  RESETn: Pin,
                  TEN: Pin,
                  CK: DiffPin,
@@ -67,7 +67,7 @@ class DDR4:
                  PARITY: Pin,
                  ALERTn: Pin,
                  DM: Pin):
-        self.ctl = ctl
+        self.ctl = CK[0].device.ctl
         self.RESETn = RESETn
         self.CK = CK
         self.CKE = CKE

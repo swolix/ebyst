@@ -23,8 +23,8 @@ from bitarray.util import int2ba, ba2int
 from ..device import Pin
 
 class MDIO:
-    def __init__(self, ctl, MDC: Pin, MDIO: Pin, RESETn: Pin=None):
-        self.ctl = ctl
+    def __init__(self, MDC: Pin, MDIO: Pin, RESETn: Pin=None):
+        self.ctl = MDC.device.ctl
         self.MDC = MDC
         self.MDIO = MDIO
         self.RESETn = RESETn
@@ -42,7 +42,6 @@ class MDIO:
         await self.ctl.cycle()
 
     async def send_bits(self, bits: bitarray):
-        # print("S", bits)
         self.MDIO.output_enable(True)
         for bit in bits:
             self.MDC.set_value(0)
@@ -61,7 +60,6 @@ class MDIO:
             await self.ctl.cycle()
             r.append(self.MDIO.get_value())
         self.MDIO.output_enable(True)
-        # print("R", r)
         return r
 
     async def read(self, phy_address, reg_address):

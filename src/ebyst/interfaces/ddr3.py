@@ -29,8 +29,8 @@ ON_RISING = 2
 BEFORE_FALLING = 3
 
 class DDR3:
-    def __init__(self, ctl,
-                 RESETn: Pin, 
+    def __init__(self,
+                 RESETn: Pin,
                  CK: DiffPin,
                  CKE: Pin | PinGroup,
                  CSn: Pin | PinGroup,
@@ -43,7 +43,7 @@ class DDR3:
                  DQS: DiffPin,
                  ODT: PinGroup,
                  DM: PinGroup):
-        self.ctl = ctl
+        self.ctl = CK[0].device.ctl
         self.RESETn = RESETn
         self.CK = CK
         self.CKE = CKE

@@ -34,7 +34,7 @@ async def flash(dev):
         'DQ1':      dev.pinmap["IO_C18"],
     }
     dev.ctl.trace("flash.vcd", **pins)
-    flash = MT25Q(dev.ctl, **pins)
+    flash = MT25Q(**pins)
 
     await flash.init()
     print("Flash ID:", (await flash.read_id()).hex())
@@ -45,7 +45,7 @@ async def mdio(dev):
         'MDIO':     dev.pinmap["IO_Y13"],
     }
     dev.ctl.trace("mdio.vcd", **pins)
-    mdio = MDIO(dev.ctl, **pins)
+    mdio = MDIO(**pins)
 
     # PHY ID
     for pin in ("IO_Y7", "IO_AA7", "IO_AA9"):
@@ -83,7 +83,7 @@ async def ddr3(dev):
         'RESETn':   dev.pinmap["IO_AG22"],
     }
     dev.ctl.trace("ddr3.vcd", **pins)
-    ddr3 = DDR3(dev.ctl, **pins)
+    ddr3 = DDR3(**pins)
 
     bank = bitarray("000", endian='little')
     row = bitarray("0000000000000000", endian='little')
@@ -209,7 +209,7 @@ async def ddr4(dev):
     dev.ctl.trace("ddr4.vcd", trace_all=True, **pins_a)
 
     for pins in (pins_a, pins_b, pins_c, pins_d):
-        ddr4 = DDR4(dev.ctl, **pins)
+        ddr4 = DDR4(**pins)
         await ddr4.init()
         print("DDR4: Running connectivity test")
         await ddr4.test()
@@ -228,14 +228,14 @@ async def clock(dev):
             zeroes += 1
     if ones < 40 or zeroes < 40: raise Exception("Clock not ticking")
 
-async def loopback(ctl, o_pin, i_pin):
+async def loopback(o_pin, i_pin):
     print(f"Loopback {o_pin.name} => {i_pin.name}")
     i_pin.output_enable(False)
     o_pin.output_enable(True)
     for v in (0, 1, 0):
         o_pin.set_value(v)
-        await ctl.cycle() # drive
-        await ctl.cycle() # sample
+        await o_pin.device.ctl.cycle() # drive
+        await i_pin.device.ctl.cycle() # sample
         if i_pin.get_value() != v:
             raise Exception(f"Loopback {o_pin.name} => {i_pin.name} failed")
 
@@ -260,8 +260,8 @@ async def main():
 
         ctl.extest_pulse()
         async with asyncio.TaskGroup() as tg:
-            tg.create_task(loopback(ctl, dev.pinmap['IO_AH33'], dev.pinmap['IO_AG31']))
-            tg.create_task(loopback(ctl, dev.pinmap['IO_AF33'], dev.pinmap['IO_AH29']))
+            tg.create_task(loopback(dev.pinmap['IO_AH33'], dev.pinmap['IO_AG31']))
+            tg.create_task(loopback(dev.pinmap['IO_AF33'], dev.pinmap['IO_AH29']))
     except KeyboardInterrupt:
         pass
     finally:

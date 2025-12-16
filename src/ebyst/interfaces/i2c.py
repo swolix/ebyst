@@ -24,10 +24,10 @@ class I2C:
         def __init__(self):
             Exception.__init__(self, "I2C Nack")
 
-    def __init__(self, ctl, SCL: Pin, SDA: Pin, address_bits=8, data_bits=8):
+    def __init__(self, SCL: Pin, SDA: Pin, address_bits=8, data_bits=8):
         if address_bits & 7 != 0: raise ValueError("address_bits must be a multiple of 8")
         if data_bits & 7 != 0: raise ValueError("address_bits must be a multiple of 8")
-        self.ctl = ctl
+        self.ctl = SCL.device.ctl
         self.SCL = SCL
         self.SDA = SDA
         self.address_bits = address_bits

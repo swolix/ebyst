@@ -29,7 +29,7 @@ await ctl.cycle() # sample input
 print(dev.pinmap['I'].get_value())
 
 # I2C test
-i2c = ebyst.interfaces.I2C(ctl, dev.pinmap['PB9A'], dev.pinmap['PB4B'])
+i2c = ebyst.interfaces.I2C(dev.pinmap['PB9A'], dev.pinmap['PB4B'])
 await i2c.init()
 dev_address = 0xa0
 reg_address = 0x10
@@ -60,8 +60,8 @@ async def main():
     ctl.validate_chain()
     ctl.extest()
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(loopback_test(ctl, dev.pinmap['PB2C'], dev.pinmap['PB2A']))
-        tg.create_task(loopback_test(ctl, dev.pinmap['PB4C'], dev.pinmap['PB4D']))
+        tg.create_task(loopback_test(dev.pinmap['PB2C'], dev.pinmap['PB2A']))
+        tg.create_task(loopback_test(dev.pinmap['PB4C'], dev.pinmap['PB4D']))
 
 if __name__ == "__main__":
     logging.basicConfig()
@@ -79,7 +79,7 @@ Generate .vcd traces for selected pins;
         'MDIO':     dev.pinmap["IO_Y13"],
     }
     ctl.trace("mdio.vcd", **pins)
-    mdio = MDIO(ctl, **pins)
+    mdio = MDIO(**pins)
 ```
 
 # AC coupled nets

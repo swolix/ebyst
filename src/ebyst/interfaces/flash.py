@@ -23,12 +23,12 @@ from ..device import Pin
 from .spi import SPI
 
 class MT25Q:
-    def __init__(self, ctl, C: Pin, Sn: Pin, DQ0: Pin, DQ1: Pin, RESETn: Pin=None, WPn: Pin=None, HOLDn: Pin=None):
-        self.ctl = ctl
+    def __init__(self, C: Pin, Sn: Pin, DQ0: Pin, DQ1: Pin, RESETn: Pin=None, WPn: Pin=None, HOLDn: Pin=None):
+        self.ctl = C.device.ctl
         self.WPn = WPn
         self.RESETn = RESETn
         self.HOLDn = HOLDn
-        self.spi = SPI(ctl, SCK=C, SSn=Sn, MOSI=DQ0, MISO=DQ1)
+        self.spi = SPI(SCK=C, SSn=Sn, MOSI=DQ0, MISO=DQ1)
 
     async def init(self):
         if not self.RESETn is None:

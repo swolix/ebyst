@@ -80,7 +80,8 @@ class Cell:
 
 class Pin:
     """Represents a device pin"""
-    def __init__(self, name):
+    def __init__(self, device, name):
+        self.device = device
         self.name = name
         self.input_cell = None
         self.output_cell = None
@@ -96,7 +97,7 @@ class Pin:
                 raise Exception(f"Pin {self.name} has no control cell")
         else:
             return self.control_cell.out_value != self.output_cell.out_dis_ctl
-    
+
     def output_enable(self, enable=True):
         if enable:
             if self.output_cell is None:
@@ -205,7 +206,7 @@ class Device:
                 try:
                     pin = self.pinmap[cell.port]
                 except KeyError:
-                    pin = Pin(cell.port)
+                    pin = Pin(self, cell.port)
                     self.pinmap[cell.port] = pin
 
                 if cell.function in ("output2", "output3", "bidir"):
