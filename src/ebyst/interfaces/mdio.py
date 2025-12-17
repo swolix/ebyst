@@ -68,3 +68,10 @@ class MDIO:
         await self.send_bits(int2ba(reg_address, length=5))
         await self.recv_bits(2)
         return ba2int(await self.recv_bits(16))
+
+    async def write(self, phy_address, reg_address, data):
+        await self.send_bits(bitarray("111111111111111111111111111111110101"))
+        await self.send_bits(int2ba(phy_address, length=5))
+        await self.send_bits(int2ba(reg_address, length=5))
+        await self.send_bits(bitarray("10"))
+        await self.send_bits(int2ba(data, length=16))
