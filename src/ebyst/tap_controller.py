@@ -58,6 +58,8 @@ class Opcode(Enum):
     EXTEST = "EXTEST"
     EXTEST_PULSE = "EXTEST_PULSE"
 
+from .stapl.crc import Crc
+
 class TapController:
     class Chain(list):
         """Chain of devices, 0 is close to TDI"""
@@ -109,10 +111,39 @@ class TapController:
         self.cycle_counter = 0
         self.traces = []
         self.max_freq = max_freq
+        self.stapl_f = None
+        self.stapl_crc = 0
 
     def reset(self):
         self.driver.reset()
         self.state = State.TEST_LOGIC_RESET
+
+    def _write_stapl_line(self, line):
+        if not self.stapl_f is None:
+            self.stapl_f.write(line)
+            self.stapl_f.write("\n")
+            self.stapl_crc.update(line)
+            self.stapl_crc.update("\n")
+
+    def start_stapl_recording(self, f, action="bscan", reset=True):
+        self.stapl_f = f
+        self.stapl_crc = Crc()
+        self._write_stapl_line('NOTE "CREATOR" "Ebyst STAPL Recorder";')
+        self._write_stapl_line('NOTE "URL" "https://pypi.org/project/ebyst/";')
+        self._write_stapl_line('')
+        self._write_stapl_line(f'ACTION {action.upper()} = DO_{action.upper()};')
+        self._write_stapl_line('')
+        self._write_stapl_line(f'PROCEDURE DO_{action.upper()};')
+        if reset:
+            self._write_stapl_line(f'    STATE RESET;')
+
+    def stop_stapl_recording(self, reset=True):
+        if reset:
+            self._write_stapl_line(f'    STATE RESET;')
+        self._write_stapl_line(f'ENDPROC;')
+        self._write_stapl_line(f'')
+        self._write_stapl_line(f'CRC {self.stapl_crc.finalize():04x};')
+        self.stapl_f = None
 
     def load_instruction(self, instruction: Opcode):
         if not self.chain.validated: raise Exception("Chain not validated")
@@ -123,6 +154,7 @@ class TapController:
         self.state = State.EXIT1_IR
         self._goto(State.UPDATE_IR)
         self.in_extest = False
+        self._write_stapl_line(f"    IRSCAN {len(tdi_str)}, #{tdi_str.to01()[::-1]};")
 
     def read_register(self, n: int):
         if not self.chain.validated: raise Exception("Chain not validated")
@@ -130,6 +162,7 @@ class TapController:
         tdo = self.driver.receive_tdo_str(n, first_tms=0 if n > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
         self._goto(State.UPDATE_DR)
+        self._write_stapl_line(f"    DRSCAN {n};")
         return tdo
 
     def write_register(self, tdi: bitarray):
@@ -138,6 +171,7 @@ class TapController:
         self.driver.transmit_tdi_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
         self._goto(State.UPDATE_DR)
+        self._write_stapl_line(f"    DRSCAN {len(tdi)}, #{tdi.to01()[::-1]};")
 
     def read_write_register(self, tdi: bitarray):
         if not self.chain.validated: raise Exception("Chain not validated")
@@ -145,6 +179,7 @@ class TapController:
         tdo = self.driver.transfer_tdi_tdo_str(tdi, first_tms=0 if len(tdi) > 1 else 1, last_tms=1)
         self.state = State.EXIT1_DR
         self._goto(State.UPDATE_DR)
+        self._write_stapl_line(f"    DRSCAN {len(tdi)}, #{tdi.to01()[::-1]};")
         return tdo
 
     def detect_chain(self):
