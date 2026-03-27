@@ -23,6 +23,7 @@ import pyparsing as pp
 from .data import Int, IntArray
 from .expressions import Expression
 from ..tap_controller import State
+from .crc import Crc as CrcAlg
 
 logger = logging.getLogger(__name__)
 
@@ -479,18 +480,9 @@ class Crc:
         self.expected = int(tokens[0], 16)
 
         if self.expected != 0:
-            CCITT_CRC =  0x8408
-            crc_register = 0xFFFF
-            for in_byte in s[:loc]:
-                in_byte = ord(in_byte)
-                if in_byte != 13:
-                    for _ in range(8):
-                        feedback = (in_byte ^ crc_register) & 0x01;
-                        crc_register >>= 1; # shift the shift register
-                        if feedback: crc_register ^= CCITT_CRC; # invert selected bits
-                        in_byte >>= 1; # get the next bit of in_byte
-
-            self.actual = (~crc_register) & 0xFFFF
+            crc = CrcAlg()
+            crc.update(s[:loc])
+            self.actual = crc.finalize()
         else:
             self.actual = 0
 
