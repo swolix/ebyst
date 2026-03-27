@@ -410,6 +410,10 @@ class TapController:
             raise Exception(f"{self.state.name} is not a wait state")
         if usec > 500: time.sleep(usec * 1e-6)
 
+    def trst(self, cycles: int, usec: int=0):
+        """Wait for until both (tck-)cycles and usec are satisfied"""
+        logger.warning(f"TRST not supported")
+
     def ir_scan(self, ir: bitarray, end_state: State | None=None):
         if ir.endian != 'little': raise ValueError("ir must be little endian bitarray")
         if end_state is None:
