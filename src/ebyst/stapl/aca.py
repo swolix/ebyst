@@ -43,17 +43,20 @@ def _get_6bits(compressed: str):
 
 def _get_bytes(compressed: str):
     it = _get_6bits(compressed)
-    try:
-        while True:
+    done = False
+    while not done:
+        a = b = c = d = 0
+        try:
             a = next(it)
             b = next(it)
-            yield a | ((b & 0x03) << 6)
             c = next(it)
-            yield ((b & 0x3c) >> 2) | ((c & 0x0f) << 4)
             d = next(it)
-            yield ((c & 0x30) >> 4) | (d << 2)
-    except StopIteration:
-        pass
+        except StopIteration:
+            done = True
+
+        yield a | ((b & 0x03) << 6)
+        yield ((b & 0x3c) >> 2) | ((c & 0x0f) << 4)
+        yield ((c & 0x30) >> 4) | (d << 2)
 
 def decompress(compressed: str):
     ba = bitarray(endian='little', buffer=bytes(_get_bytes(compressed)))
