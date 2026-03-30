@@ -120,5 +120,27 @@ ebyst comes with a basic stapl player called stapyl;
 staplay ftdi://0x1514:0x2008:001UD001/1 polarfire.stapl READ_IDCODE
 ```
 
+# STAPL recorder
+ebyst comes with a basic stapl recorder, allowing the generation of (limited) stapl files of performed boundary scan options.
+
+```
+    ctl.detect_chain()
+    ctl.add_device(dev)
+    ctl.validate_chain()
+
+    ctl.start_stapl_recording(sys.stdout)
+
+    try:
+        ctl.extest()
+        await configure_dev(dev)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        ctl.stop_stapl_recording(reset=False)
+        ctl.reset()
+```
+
+this allows for easily generating stapl files for (e.g.) board intializations to be replayed on other stapl players.
+
 # Installation
 Releases are pushed to pypi, install via; `pip install ebyst`.
