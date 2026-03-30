@@ -102,7 +102,7 @@ Generate .vcd traces for selected pins;
 # Start test
 ctl.extest_pulse()
 
-# Loopback test (assuming loopback on pins
+# Loopback test (assuming loopback on pins)
 dev.pinmap['O'].output_enable(True)
 dev.pinmap['I'].output_enable(False)
 dev.pinmap['O'].set_value(1) # generate a pulse
